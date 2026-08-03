@@ -8,6 +8,11 @@ type GroundingChunk = {
   web?: { uri?: string; title?: string };
 };
 
+type ContentPart = {
+  text?: string;
+  thought?: boolean;
+};
+
 function extractJson(text: string): unknown {
   const trimmed = text.trim();
   try {
@@ -46,7 +51,10 @@ function groundingSources(chunks: GroundingChunk[] | undefined) {
   return sources;
 }
 
-function mergeSources(parsed: unknown, grounding: ReturnType<typeof groundingSources>) {
+function mergeSources(
+  parsed: unknown,
+  grounding: ReturnType<typeof groundingSources>,
+) {
   if (!parsed || typeof parsed !== "object") return parsed;
   const record = parsed as Record<string, unknown>;
   const insights =
@@ -77,20 +85,40 @@ function mergeSources(parsed: unknown, grounding: ReturnType<typeof groundingSou
   };
 }
 
+function extractText(parts: ContentPart[] | undefined) {
+  if (!parts?.length) return "";
+  return parts
+    .filter((part) => !part.thought && typeof part.text === "string")
+    .map((part) => part.text ?? "")
+    .join("")
+    .trim();
+}
+
+/** Deeper reasoning for creator lookup or parsing a pasted recipe. */
+const THINKING_BUDGET_DEEP = 1024;
+
+function analyzePrompt(userPrompt: string) {
+  const wantsCreator = /persona_query:\s*(?!null\b).+/i.test(userPrompt);
+  const isAdapt = /MODE:\s*adapt/i.test(userPrompt);
+  const needsDeepThinking = wantsCreator || isAdapt;
+  return { wantsCreator, isAdapt, needsDeepThinking };
+}
+
 async function callGemini(args: {
   apiKey: string;
   model: string;
   input: ProviderInput;
   useSearch: boolean;
+  thinkingBudget: number;
 }) {
-  const { apiKey, model, input, useSearch } = args;
+  const { apiKey, model, input, useSearch, thinkingBudget } = args;
   const userText = input.repairOf
     ? `${input.userPrompt}\n\n${input.repairOf}`
     : input.userPrompt;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  const wantsCreator = /persona_query:\s*(?!null\b).+/i.test(input.userPrompt);
+  const { wantsCreator } = analyzePrompt(input.userPrompt);
 
   const body: Record<string, unknown> = {
     systemInstruction: {
@@ -105,6 +133,11 @@ async function callGemini(args: {
     generationConfig: {
       responseMimeType: "application/json",
       temperature: wantsCreator ? 0.35 : 0.7,
+      // Leave headroom so thinking tokens cannot consume the whole output budget.
+      maxOutputTokens: 8192,
+      thinkingConfig: {
+        thinkingBudget,
+      },
     },
   };
 
@@ -112,9 +145,8 @@ async function callGemini(args: {
     body.tools = [{ google_search: {} }];
   }
 
-  let response: Response;
   try {
-    response = await fetch(url, {
+    return await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -124,8 +156,28 @@ async function callGemini(args: {
       error instanceof Error ? error.message : "Gemini network error",
     );
   }
+}
 
-  return response;
+type GeminiPayload = {
+  candidates?: Array<{
+    finishReason?: string;
+    content?: { parts?: ContentPart[] };
+    groundingMetadata?: { groundingChunks?: GroundingChunk[] };
+  }>;
+  error?: { message?: string };
+};
+
+async function parseGeminiResponse(response: Response) {
+  const payload = (await response.json()) as GeminiPayload;
+  const candidate = payload.candidates?.[0];
+  const text = extractText(candidate?.content?.parts);
+
+  return {
+    payload,
+    candidate,
+    text,
+    finishReason: candidate?.finishReason ?? null,
+  };
 }
 
 export function createGeminiProvider(): RecipeProvider {
@@ -138,66 +190,65 @@ export function createGeminiProvider(): RecipeProvider {
 
   return {
     async generate(input: ProviderInput): Promise<unknown> {
-      let response = await callGemini({
-        apiKey,
-        model,
-        input,
-        useSearch: true,
-      });
+      const { wantsCreator, needsDeepThinking } = analyzePrompt(input.userPrompt);
+      // Prefer search when a creator is named; fall back without tools if needed.
+      const searchAttempts = wantsCreator ? [true, false] : [false, true];
+      // Adaptive thinking: deep for creator/adapt; off for simple scratch.
+      // If deep returns empty (budget burn), retry that attempt with 0.
+      const thinkingAttempts = needsDeepThinking
+        ? [THINKING_BUDGET_DEEP, 0]
+        : [0];
 
-      // Some model/tool combos reject search + JSON mode; retry without search.
-      if (!response.ok) {
-        const firstBody = await response.text().catch(() => "");
-        if (response.status === 400) {
-          response = await callGemini({
+      let lastError = "Gemini returned an empty response";
+
+      for (const useSearch of searchAttempts) {
+        for (const thinkingBudget of thinkingAttempts) {
+          const response = await callGemini({
             apiKey,
             model,
             input,
-            useSearch: false,
+            useSearch,
+            thinkingBudget,
           });
+
           if (!response.ok) {
             const body = await response.text().catch(() => "");
-            throw new UpstreamError(
-              `Gemini HTTP ${response.status}: ${body.slice(0, 300) || firstBody.slice(0, 300)}`,
-              response.status,
-            );
+            lastError = `Gemini HTTP ${response.status}: ${body.slice(0, 300)}`;
+            // Tool + JSON combos often 400 — try next attempt.
+            if (response.status === 400 || response.status === 429) {
+              continue;
+            }
+            throw new UpstreamError(lastError, response.status);
           }
-        } else {
-          throw new UpstreamError(
-            `Gemini HTTP ${response.status}: ${firstBody.slice(0, 300)}`,
-            response.status,
+
+          const { text, candidate, finishReason } = await parseGeminiResponse(
+            response,
           );
+
+          if (!text) {
+            lastError = `Gemini returned an empty response${
+              finishReason ? ` (${finishReason})` : ""
+            }`;
+            continue;
+          }
+
+          try {
+            const parsed = extractJson(text);
+            const fromSearch = groundingSources(
+              candidate?.groundingMetadata?.groundingChunks,
+            );
+            return mergeSources(parsed, fromSearch);
+          } catch (error) {
+            lastError =
+              error instanceof Error
+                ? error.message
+                : "Failed to parse Gemini JSON";
+            continue;
+          }
         }
       }
 
-      const payload = (await response.json()) as {
-        candidates?: Array<{
-          content?: { parts?: Array<{ text?: string }> };
-          groundingMetadata?: { groundingChunks?: GroundingChunk[] };
-        }>;
-      };
-
-      const candidate = payload.candidates?.[0];
-      const text = candidate?.content?.parts
-        ?.map((part) => part.text ?? "")
-        .join("")
-        .trim();
-
-      if (!text) {
-        throw new UpstreamError("Gemini returned an empty response");
-      }
-
-      try {
-        const parsed = extractJson(text);
-        const fromSearch = groundingSources(
-          candidate?.groundingMetadata?.groundingChunks,
-        );
-        return mergeSources(parsed, fromSearch);
-      } catch (error) {
-        throw new UpstreamError(
-          error instanceof Error ? error.message : "Failed to parse Gemini JSON",
-        );
-      }
+      throw new UpstreamError(lastError);
     },
   };
 }

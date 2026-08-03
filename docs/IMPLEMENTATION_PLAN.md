@@ -13,7 +13,7 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 2 — Supabase clients and auth | Completed |
 | 3 — Onboarding and route gates | Completed |
 | 4 — AI generation | Completed |
-| 5 — Recipe detail | Pending |
+| 5 — Recipe detail | Completed |
 | 6 — History and favorites | Pending |
 | 7 — Shopping list and export | Pending |
 | 8 — Polish and deploy | Pending |
@@ -143,7 +143,7 @@ lib/shopping/scale.ts   scaleIngredients(ingredients, servingsBase, uiServings)
 lib/format.ts           formatQuantity(n)  // 2.0 -> "2", 2.5 -> "2.5"
 ```
 
-Scaling is pure and client-side: `quantity * uiServings / servingsBase`, never written back to the database. Countable-unit rounding follows dilemma 4.
+Scaling is pure and client-side: `quantity * uiServings / servingsBase` rounded to 2 decimals for all units (no ceil for countable items), never written back to the database.
 
 `app/(app)/recipes/[id]/page.tsx` is a server component that loads the row (RLS makes a foreign id return not-found) and renders:
 

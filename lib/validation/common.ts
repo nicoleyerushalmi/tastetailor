@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const IngredientInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  quantity: z.number().finite().positive().max(100_000),
+  quantity: z.coerce.number().finite().positive().max(100_000),
   unit: z
     .string()
     .trim()

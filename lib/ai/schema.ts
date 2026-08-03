@@ -24,12 +24,25 @@ export const InsightsSchema = z.object({
 
 export const AiRecipeOutputSchema = z.object({
   title: z.string().trim().min(1).max(160),
-  servings_base: z.number().int().min(1).max(24),
+  servings_base: z.coerce.number().int().min(1).max(24),
   ingredients: z.array(IngredientInputSchema).min(1).max(80),
   steps: z.array(z.string().trim().min(1).max(2000)).min(1).max(60),
   insights: InsightsSchema,
-  persona_applied: z.boolean(),
-  refused: z.boolean().optional().default(false),
+  persona_applied: z.preprocess((value) => {
+    if (typeof value === "string") {
+      const lower = value.trim().toLowerCase();
+      if (lower === "true" || lower.startsWith("yes")) return true;
+      return false;
+    }
+    return value;
+  }, z.boolean()),
+  refused: z.preprocess((value) => {
+    if (typeof value === "string") {
+      const lower = value.trim().toLowerCase();
+      return lower === "true" || lower === "yes";
+    }
+    return value;
+  }, z.boolean().optional().default(false)),
   refusal_reason: z.string().trim().max(500).optional(),
 });
 

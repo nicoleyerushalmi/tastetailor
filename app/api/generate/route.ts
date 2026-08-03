@@ -106,11 +106,14 @@ export async function POST(request: Request) {
     raw = await provider.generate({ systemPrompt, userPrompt });
   } catch (error) {
     await refundGenerationSlot();
-    const message =
-      error instanceof UpstreamError
-        ? "Something went wrong. Please try again."
-        : "Something went wrong. Please try again.";
-    return NextResponse.json({ error: "server_error", message }, { status: 500 });
+    console.error("[api/generate] provider error:", error);
+    return NextResponse.json(
+      {
+        error: "server_error",
+        message: "Something went wrong. Please try again.",
+      },
+      { status: 500 },
+    );
   }
 
   let parsed = AiRecipeOutputSchema.safeParse(raw);
@@ -225,6 +228,7 @@ export async function POST(request: Request) {
 
   if (insertError || !recipe) {
     await refundGenerationSlot();
+    console.error("[api/generate] insert error:", insertError);
     return NextResponse.json(
       {
         error: "server_error",
