@@ -9,8 +9,8 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | Phase | Status |
 | --- | --- |
 | 0 — Scaffold and tooling | Completed |
-| 1 — Database | Pending |
-| 2 — Supabase clients and auth | Pending |
+| 1 — Database | Completed |
+| 2 — Supabase clients and auth | Completed |
 | 3 — Onboarding and route gates | Pending |
 | 4 — AI generation | Pending |
 | 5 — Recipe detail | Pending |
