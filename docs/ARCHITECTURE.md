@@ -495,4 +495,4 @@ Prod: same vars in Vercel project settings; Supabase project = production DB.
 
 ## 17. Next document after this
 
-Detailed technical design (course step 4): folder-level component APIs, exact Zod schemas, SQL migration DDL, CRUD matrix, UX wireframe notes, validation rules — then implementation.
+Detailed technical design: [`TECHNICAL_DESIGN.md`](./TECHNICAL_DESIGN.md) (course step 4) — then implementation.
