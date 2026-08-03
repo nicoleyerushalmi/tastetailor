@@ -2,34 +2,63 @@
 
 Source of truth: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md).
 
-Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations, provider-agnostic AI (`mock` | `gemini`; OpenAI adapter later).
+Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations, provider-agnostic AI (`mock` | `gemini`; OpenAI adapter later). Recent phases ship on `main`.
 
 ## Progress
 
-| Phase | Status |
-| --- | --- |
-| 0 — Scaffold and tooling | Completed |
-| 1 — Database | Completed |
-| 2 — Supabase clients and auth | Completed |
-| 3 — Onboarding and route gates | Completed |
-| 4 — AI generation | Completed |
-| 5 — Recipe detail | Completed |
-| 6 — History and favorites | Pending |
-| 7 — Shopping list and export | Pending |
-| 8 — Polish and deploy | Pending |
-| 9 — Tests, scale/security docs, presentation | Pending |
+| Phase | Status | Notes |
+| --- | --- | --- |
+| 0 — Scaffold and tooling | Completed | Next.js 16, Tailwind 4, Vitest wired |
+| 1 — Database | Completed | `0001_init.sql` + live grants for `authenticated` |
+| 2 — Supabase clients and auth | Completed | Login/signup, session middleware |
+| 3 — Onboarding and route gates | Completed | Profile form, `(app)` layout gates, AppNav |
+| 4 — AI generation | Completed | `mock` + `gemini`, paste-to-adapt, sources, creator-first prompts |
+| 5 — Recipe detail | Completed | Scaler, favorite, delete, add-to-list merge, insights/sources |
+| 6 — History and favorites | Pending | Placeholder pages only |
+| 7 — Shopping list and export | Pending | Upsert from detail works; list UI/export not built |
+| 8 — Polish and deploy | Pending | Landing exists; Vercel/README/smoke still open |
+| 9 — Tests, scale/security docs, presentation | Pending | Vitest configured; no test files yet |
+
+**Roughly halfway through the MVP plan** (phases 0–5 done; 6–9 remain).
 
 ---
 
-## Open dilemmas (decide as we go, not blocking Phase 0–1)
+## Current snapshot (as of Phase 5)
 
-1. **PRD contradicts the technical design in two places.** PRD section 7 Flow 5 still promises cup-to-gram normalization, and Flow 2 still describes a curated categorized persona menu. We locked same-unit-only merging and free-text personas. The PRD is a partner document, so this needs a joint edit before submission.
-2. **Rate-limit refund on upstream failure.** Design says a non-culinary refusal burns a generation slot. Undefined: what happens on an OpenAI 500 or timeout. Proposal: refund the slot on upstream/network failure, never on refusal.
-3. **Supabase email confirmation.** Enabled by default, which blocks instant signup during a live demo. Proposal: disable confirmation for the MVP project and note it in the security document as a known gap.
-4. **Fractional quantities for countable items.** Scaling 3 eggs from 4 to 6 servings gives 4.5 eggs. Proposal: round up to a whole number when the unit is empty (countable), keep 2 decimals otherwise.
-5. **Insights content in scratch mode.** There is no original recipe to substitute from. Proposal: `substitutions` may be empty, `summary` explains the profile-driven choices instead.
-6. **Recipe delete.** Listed as optional in the design. Proposal: include it; it is cheap and makes the CRUD story complete.
-7. **Work split with your partner.** Affects branching. Proposal: short-lived feature branches off `main`, one phase per branch.
+**Working end-to-end locally**
+
+1. Landing → signup/login  
+2. Onboarding dietary profile  
+3. Generate (scratch dish or paste recipe to adapt) with optional creator  
+4. Gemini (or mock) returns structured recipe + sources  
+5. Recipe detail: scale servings, favorite, delete, add scaled ingredients to shopping list  
+
+**Still stubs / unfinished**
+
+- `/history`, `/favorites` — empty placeholder pages  
+- `/shopping-list` — placeholder (rows can already exist in DB from “Add to shopping list”)  
+- Vercel production deploy, README course polish, automated tests, scale/security writeups  
+
+**Stack in use**
+
+- Next.js 16 App Router, React 19, TypeScript, Tailwind 4  
+- Supabase Auth + Postgres + RLS  
+- AI: `AI_PROVIDER=mock|gemini` (`GEMINI_API_KEY`, adaptive `thinkingBudget`)  
+- Zod validation throughout  
+
+**Key env** (see `.env.local.example`): `NEXT_PUBLIC_SUPABASE_*`, `AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GENERATIONS_PER_DAY`.
+
+---
+
+## Open dilemmas (status)
+
+1. **PRD vs locked design** (cup↔gram merge; curated persona menu). Still needs a joint PRD edit before submission. **Open.**
+2. **Rate-limit refund on upstream failure.** **Decided / implemented:** refund on network/5xx and invalid AI output after repair; never refund on non-culinary refusal.
+3. **Supabase email confirmation.** Still recommend disabling for demos; document in security writeup. **Open (ops).**
+4. **Fractional countable quantities.** **Decided / implemented:** no ceil — all units use 2-decimal scaling (e.g. 4.5 eggs).
+5. **Scratch-mode insights.** **Decided / implemented:** substitutions may be empty; summary + sources explain choices / creator use.
+6. **Recipe delete.** **Decided / implemented** on recipe detail.
+7. **Work split / branching.** Recent work ships on `main`; short-lived `cursor/*` branches optional for PRs.
 
 ---
 
@@ -63,6 +92,8 @@ Verification checklist after running:
 - Signing up a test user auto-creates a `profiles` row via the `handle_new_user` trigger.
 - `claim_generation_slot(20)` returns `true` then `false` after the limit.
 - Querying another user's recipe row returns zero rows, not an error.
+
+**Also required:** `GRANT` select/update (profiles) and CRUD (recipes, shopping_list_items) to `authenticated` — without this the API returns 403. Grants are in `0001_init.sql`; apply on the live project if tables were created before grants existed. Mark migration `0001` as applied in `supabase_migrations.schema_migrations` if SQL was run by hand first.
 
 ---
 
@@ -112,28 +143,31 @@ Middleware stays cookie-only; the profile read happens in the layout to keep the
 
 ## Phase 4 — AI generation
 
-Provider-agnostic layer: `lib/ai/provider.ts` + `mock` and `gemini` adapters (`AI_PROVIDER`). Shared prompts in `lib/ai/prompt.ts`; output validated with `AiRecipeOutputSchema`.
+Provider-agnostic layer: `lib/ai/provider.ts` + `mock` and `gemini` adapters (`AI_PROVIDER`). Shared prompts in `lib/ai/prompt.ts`; output validated with `AiRecipeOutputSchema` (includes `insights.sources`).
 
 `app/api/generate/route.ts` logic, in order:
 
-1. `getUser()` → 401
-2. Load profile → 403 when `onboarding_completed` is false
-3. `GenerateRequestSchema.safeParse(body)` → 400 with Zod issues
-4. `claim_generation_slot(GENERATIONS_PER_DAY)` → 429
-5. Build prompts, call provider
-6. Parse with `AiRecipeOutputSchema`, one repair retry, then 422 (refund slot)
-7. Upstream failure → refund slot, 500
-8. `refused === true` → 400 `non_culinary`, no insert (no refund)
-9. `persona_fallback_used = Boolean(persona_query) && !persona_applied`
-10. Insert into `recipes`, return 201 with the saved row
+1. `getUser()` → 401  
+2. Load profile → 403 when `onboarding_completed` is false  
+3. `GenerateRequestSchema.safeParse(body)` → 400 with Zod issues  
+4. `claim_generation_slot(GENERATIONS_PER_DAY)` → 429  
+5. Build prompts, call provider  
+6. Parse with `AiRecipeOutputSchema`, one repair retry, then 422 (refund slot)  
+7. Upstream failure → refund slot, 500  
+8. `refused === true` → 400 `non_culinary`, no insert (no refund)  
+9. `persona_fallback_used = Boolean(persona_query) && !persona_applied`  
+10. Insert into `recipes`, return 201 with the saved row  
 
 Generate UI:
 
-- `components/generate/GenerateTabs.tsx` switches between the two forms.
-- `AdaptRecipeForm` manages dynamic ingredient rows (`name | quantity | unit`) and step rows in local state.
-- `ScratchDishForm` is a single dish-name field.
-- `PersonaField` is a free-text input with `PERSONA_SHORTCUTS` chips that only prefill the field.
-- On success, route to `/recipes/[id]` (minimal detail in Phase 4; scaler/favorite/shopping in Phase 5).
+- `GenerateTabs` — Adapt | Scratch  
+- **Adapt:** paste free-text `recipe_text` (AI parses/structures); not manual ingredient rows  
+- **Scratch:** `dish_name`  
+- `PersonaField` — free-text creator/style + shortcut chips  
+- Creator-first prompting: if the creator’s recipe is known, reproduce it (then diet/allergy tweaks); list sources  
+- Gemini: Google Search when useful; adaptive `thinkingBudget` (0 for simple scratch; 1024 for adapt/creator, with fallback to 0)  
+- On success → `/recipes/[id]`  
+
 ---
 
 ## Phase 5 — Recipe detail
@@ -141,18 +175,19 @@ Generate UI:
 ```text
 lib/shopping/scale.ts   scaleIngredients(ingredients, servingsBase, uiServings)
 lib/format.ts           formatQuantity(n)  // 2.0 -> "2", 2.5 -> "2.5"
+lib/shopping/merge.ts   normalizeName / normalizeUnit / mergeQuantity
 ```
 
 Scaling is pure and client-side: `quantity * uiServings / servingsBase` rounded to 2 decimals for all units (no ceil for countable items), never written back to the database.
 
-`app/(app)/recipes/[id]/page.tsx` is a server component that loads the row (RLS makes a foreign id return not-found) and renders:
+`app/(app)/recipes/[id]/page.tsx` loads the row (RLS → not-found) and renders via `RecipeDetailClient`:
 
-- `RecipeHeader` with title and `FavoriteButton` (optimistic `is_favorite` toggle)
-- `ServingScaler` holding `uiServings` in local state, clamped to 1–24
-- `IngredientList` recomputing display quantities on every change
-- `StepList`
-- `InsightsBox` with summary plus substitution reasons, and the persona fallback banner when applicable
-- `AddToShoppingListButton` receiving the current `uiServings`
+- `RecipeHeader` — title, favorite toggle, delete  
+- `ServingScaler` — `uiServings` 1–24  
+- `IngredientList` — live scaled quantities  
+- `StepList`  
+- `AddToShoppingListButton` — scale → merge upsert into `shopping_list_items`  
+- `InsightsBox` — summary, substitutions, sources, persona fallback banner  
 
 ---
 
@@ -171,18 +206,20 @@ Both are server components over the same table:
 
 Page state lives in the `?page=` search param so it survives refresh. `RecipeCard` is a link to the detail page. Empty states link to `/generate`.
 
+**Status:** nav links exist; pages are placeholders until this phase.
+
 ---
 
 ## Phase 7 — Shopping list and export
 
 ```text
-lib/shopping/merge.ts       normalizeName(), normalizeUnit(), mergeQuantity()
-lib/shopping/exportText.ts  formatShoppingListForExport(items)
+lib/shopping/merge.ts       normalizeName(), normalizeUnit(), mergeQuantity()  // done in Phase 5
+lib/shopping/exportText.ts  formatShoppingListForExport(items)               // todo
 ```
 
-Add-to-list logic: scale to `uiServings`, normalize each ingredient, then upsert on the `(user_id, name, unit)` unique constraint, summing quantity on conflict and appending the recipe id to `source_recipe_ids`. Different units stay as separate rows by design.
+Add-to-list logic (done in Phase 5): scale to `uiServings`, normalize each ingredient, then upsert on the `(user_id, name, unit)` unique constraint, summing quantity on conflict and appending the recipe id to `source_recipe_ids`.
 
-`/shopping-list` renders checkbox rows with optimistic updates, a delete per row, a clear-all action, and `ExportListButton` which writes a two-section plain-text block to the clipboard:
+Still to build: `/shopping-list` checkbox UI, delete row, clear-all, and `ExportListButton` clipboard export:
 
 ```text
 Shopping list - TasteTailor
@@ -198,8 +235,8 @@ Already have:
 ## Phase 8 — Polish and deploy
 
 - Loading and error boundaries per route group, consistent error copy from technical design section 10.
-- Landing page with the value proposition and the two calls to action.
-- Deploy: push to GitHub, import into Vercel, set env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AI_PROVIDER=openai`, `GENERATIONS_PER_DAY`), add the Vercel URL to Supabase Auth redirect URLs.
+- Landing page with the value proposition and the two calls to action (basic landing exists).
+- Deploy: push to GitHub, import into Vercel, set env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GENERATIONS_PER_DAY`), add the Vercel URL to Supabase Auth redirect URLs.
 - Smoke test the full flow on the live URL.
 - Update `README.md` with local run instructions and the env var table (course deliverable).
 
@@ -213,4 +250,10 @@ Written after the app works, in this order: test specification document, impleme
 
 ## Suggested branch flow
 
-One branch per phase off `main`, for example `feat/phase-2-auth`, merged after a quick review by whichever partner did not write it. Keeps the shared history readable and gives both partners exposure to the whole codebase, which matters for the oral presentation.
+Default: ship on `main` for this small team. Optional short-lived branches (`cursor/phase-N-…`) for reviewable PRs. Keep secrets out of git (`.env.local` only).
+
+---
+
+## Next step
+
+**Phase 6 — History and favorites:** replace placeholders with paginated recipe lists (`RecipeCard` → detail), favorites filter, empty states to `/generate`.
