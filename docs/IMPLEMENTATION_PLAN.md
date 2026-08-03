@@ -2,7 +2,7 @@
 
 Source of truth: [PRD.md](./PRD.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md).
 
-Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations, mock AI provider until OpenAI keys exist.
+Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations, provider-agnostic AI (`mock` | `gemini`; OpenAI adapter later).
 
 ## Progress
 
@@ -12,7 +12,7 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 1 — Database | Completed |
 | 2 — Supabase clients and auth | Completed |
 | 3 — Onboarding and route gates | Completed |
-| 4 — AI generation | Pending |
+| 4 — AI generation | Completed |
 | 5 — Recipe detail | Pending |
 | 6 — History and favorites | Pending |
 | 7 — Shopping list and export | Pending |
@@ -112,17 +112,7 @@ Middleware stays cookie-only; the profile read happens in the layout to keep the
 
 ## Phase 4 — AI generation
 
-Build the provider abstraction first so work is not blocked on the OpenAI key.
-
-```text
-lib/ai/schema.ts    AiRecipeOutputSchema, InsightsSchema
-lib/ai/prompt.ts    buildSystemPrompt(), buildUserPrompt(profile, request)
-lib/ai/provider.ts  interface RecipeProvider { generate(input): Promise<unknown> }
-lib/ai/openai.ts    real provider, structured JSON output
-lib/ai/mock.ts      deterministic fixture provider
-```
-
-Provider selection: `AI_PROVIDER=mock | openai` in env. Mock returns a valid fixture recipe, sets `persona_applied: false` for a sentinel persona string, and returns `refused: true` for a non-culinary keyword so guardrail handling is testable without spending tokens.
+Provider-agnostic layer: `lib/ai/provider.ts` + `mock` and `gemini` adapters (`AI_PROVIDER`). Shared prompts in `lib/ai/prompt.ts`; output validated with `AiRecipeOutputSchema`.
 
 `app/api/generate/route.ts` logic, in order:
 
@@ -131,10 +121,11 @@ Provider selection: `AI_PROVIDER=mock | openai` in env. Mock returns a valid fix
 3. `GenerateRequestSchema.safeParse(body)` → 400 with Zod issues
 4. `claim_generation_slot(GENERATIONS_PER_DAY)` → 429
 5. Build prompts, call provider
-6. Parse with `AiRecipeOutputSchema`, one repair retry, then 422
-7. `refused === true` → 400 `non_culinary`, no insert
-8. `persona_fallback_used = Boolean(persona_query) && !persona_applied`
-9. Insert into `recipes`, return 201 with the saved row
+6. Parse with `AiRecipeOutputSchema`, one repair retry, then 422 (refund slot)
+7. Upstream failure → refund slot, 500
+8. `refused === true` → 400 `non_culinary`, no insert (no refund)
+9. `persona_fallback_used = Boolean(persona_query) && !persona_applied`
+10. Insert into `recipes`, return 201 with the saved row
 
 Generate UI:
 
@@ -142,8 +133,7 @@ Generate UI:
 - `AdaptRecipeForm` manages dynamic ingredient rows (`name | quantity | unit`) and step rows in local state.
 - `ScratchDishForm` is a single dish-name field.
 - `PersonaField` is a free-text input with `PERSONA_SHORTCUTS` chips that only prefill the field.
-- On success, route to `/recipes/[id]`, showing the fallback banner when needed.
-
+- On success, route to `/recipes/[id]` (minimal detail in Phase 4; scaler/favorite/shopping in Phase 5).
 ---
 
 ## Phase 5 — Recipe detail

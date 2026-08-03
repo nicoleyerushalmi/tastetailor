@@ -4,6 +4,12 @@ export type Ingredient = {
   unit: string;
 };
 
+export type RecipeSource = {
+  label: string;
+  url?: string;
+  note?: string;
+};
+
 export type RecipeInsights = {
   summary: string;
   substitutions: {
@@ -11,6 +17,7 @@ export type RecipeInsights = {
     replacement: string;
     reason: string;
   }[];
+  sources?: RecipeSource[];
 };
 
 export type RecipeRow = {
