@@ -1,4 +1,7 @@
 -- TasteTailor MVP schema
+-- Apply in Supabase Dashboard → SQL Editor → New query → Run
+-- Source of truth for Phase 1
+
 create extension if not exists "pgcrypto";
 
 -- ---------------------------------------------------------------------------
@@ -13,7 +16,9 @@ create table public.profiles (
   preferences_notes text,
   onboarding_completed boolean not null default false,
   daily_generation_count integer not null default 0,
-  generation_count_reset_at timestamptz not null default (date_trunc('day', now() at time zone 'utc') + interval '1 day'),
+  generation_count_reset_at timestamptz not null default (
+    date_trunc('day', now() at time zone 'utc') + interval '1 day'
+  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint diet_type_check check (
