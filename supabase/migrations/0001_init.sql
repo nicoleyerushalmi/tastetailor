@@ -119,6 +119,13 @@ before update on public.shopping_list_items
 for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
+-- Privileges (RLS still restricts rows; without GRANT, API returns 403)
+-- ---------------------------------------------------------------------------
+grant select, update on table public.profiles to authenticated;
+grant select, insert, update, delete on table public.recipes to authenticated;
+grant select, insert, update, delete on table public.shopping_list_items to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 alter table public.profiles enable row level security;

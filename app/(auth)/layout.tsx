@@ -1,7 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getCurrentUserAndProfile } from "@/lib/profile/get-profile";
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default async function AuthLayout({ children }: { children: ReactNode }) {
+  const { user, profile } = await getCurrentUserAndProfile();
+
+  if (user) {
+    redirect(profile?.onboarding_completed ? "/generate" : "/onboarding");
+  }
+
   return (
     <div className="relative flex min-h-full flex-1 flex-col items-center justify-center px-4 py-16">
       <div

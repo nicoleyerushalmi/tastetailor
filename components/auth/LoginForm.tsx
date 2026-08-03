@@ -12,7 +12,7 @@ type LoginFormProps = {
   redirectTo?: string;
 };
 
-export function LoginForm({ redirectTo = "/generate" }: LoginFormProps) {
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,14 +39,39 @@ export function LoginForm({ redirectTo = "/generate" }: LoginFormProps) {
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       setFormError("Invalid email or password");
       return;
     }
 
-    router.push(redirectTo);
+    if (redirectTo) {
+      setLoading(false);
+      router.push(redirectTo);
+      router.refresh();
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    let nextPath = "/onboarding";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile?.onboarding_completed) {
+        nextPath = "/generate";
+      }
+    }
+
+    setLoading(false);
+    router.push(nextPath);
     router.refresh();
   }
 
