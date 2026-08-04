@@ -14,12 +14,12 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 3 — Onboarding and route gates | Completed | Profile form, `(app)` layout gates, AppNav |
 | 4 — AI generation | Completed | `mock` + `gemini`, paste-to-adapt, sources, creator-first prompts |
 | 5 — Recipe detail | Completed | Scaler, favorite, delete, add-to-list merge, insights/sources |
-| 6 — History and favorites | Pending | Placeholder pages only |
+| 6 — History and favorites | Completed | Paginated `RecipeCard` grids, `?page=` search param, favorites filter |
 | 7 — Shopping list and export | Pending | Upsert from detail works; list UI/export not built |
 | 8 — Polish and deploy | Pending | Landing exists; Vercel/README/smoke still open |
 | 9 — Tests, scale/security docs, presentation | Pending | Vitest configured; no test files yet |
 
-**Roughly halfway through the MVP plan** (phases 0–5 done; 6–9 remain).
+**Phases 0–6 done; 7–9 remain.**
 
 ---
 
@@ -35,7 +35,6 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 
 **Still stubs / unfinished**
 
-- `/history`, `/favorites` — empty placeholder pages  
 - `/shopping-list` — placeholder (rows can already exist in DB from “Add to shopping list”)  
 - Vercel production deploy, README course polish, automated tests, scale/security writeups  
 
@@ -206,7 +205,7 @@ Both are server components over the same table:
 
 Page state lives in the `?page=` search param so it survives refresh. `RecipeCard` is a link to the detail page. Empty states link to `/generate`.
 
-**Status:** nav links exist; pages are placeholders until this phase.
+**Status:** Completed. `components/history/RecipeCard.tsx` and `components/history/Pagination.tsx` are shared between `/history` and `/favorites`; each page fetches with `{ count: "exact" }` and computes `hasNext` from `from + rows.length < count` (prev/next links, no client fetching). Overflowing past the last page (or an empty favorites list) shows a distinct empty state rather than the zero-state copy.
 
 ---
 
@@ -256,4 +255,4 @@ Default: ship on `main` for this small team. Optional short-lived branches (`cur
 
 ## Next step
 
-**Phase 6 — History and favorites:** replace placeholders with paginated recipe lists (`RecipeCard` → detail), favorites filter, empty states to `/generate`.
+**Phase 7 — Shopping list and export:** replace the `/shopping-list` placeholder with checkbox UI, delete row, clear-all, and `ExportListButton` clipboard export.

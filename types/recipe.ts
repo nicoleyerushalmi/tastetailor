@@ -36,6 +36,14 @@ export type RecipeRow = {
   created_at: string;
 };
 
+export type RecipeSummary = {
+  id: string;
+  title: string;
+  created_at: string;
+  is_favorite: boolean;
+  mode: "adapt" | "scratch";
+};
+
 export type ShoppingListItemRow = {
   id: string;
   user_id: string;
