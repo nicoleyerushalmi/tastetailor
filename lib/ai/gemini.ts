@@ -1,3 +1,4 @@
+import { buildPersonaIntensifyPrompt } from "@/lib/ai/prompt";
 import {
   UpstreamError,
   type ProviderInput,
@@ -104,6 +105,19 @@ function analyzePrompt(userPrompt: string) {
   return { wantsCreator, isAdapt, needsDeepThinking };
 }
 
+function extractPersonaQuery(userPrompt: string): string | null {
+  const match = userPrompt.match(/persona_query:\s*(.+)/i);
+  const value = match?.[1]?.trim();
+  return value && value.toLowerCase() !== "null" ? value : null;
+}
+
+/** True when the model honestly reported it couldn't apply the requested persona. */
+function looksPersonaUnknown(parsed: unknown): boolean {
+  if (!parsed || typeof parsed !== "object") return false;
+  const record = parsed as Record<string, unknown>;
+  return record.persona_applied === false && record.refused !== true;
+}
+
 async function callGemini(args: {
   apiKey: string;
   model: string;
@@ -200,6 +214,10 @@ export function createGeminiProvider(): RecipeProvider {
         : [0];
 
       let lastError = "Gemini returned an empty response";
+      // A schema-shaped result where the model honestly couldn't apply the
+      // persona — kept as a fallback in case the intensified retry below
+      // fails outright, so an unresolved persona never turns into a 500.
+      let personaUnknownResult: unknown;
 
       for (const useSearch of searchAttempts) {
         for (const thinkingBudget of thinkingAttempts) {
@@ -237,7 +255,16 @@ export function createGeminiProvider(): RecipeProvider {
             const fromSearch = groundingSources(
               candidate?.groundingMetadata?.groundingChunks,
             );
-            return mergeSources(parsed, fromSearch);
+            const merged = mergeSources(parsed, fromSearch);
+
+            if (wantsCreator && looksPersonaUnknown(parsed)) {
+              // Valid recipe, but the model gave up on the persona — try the
+              // remaining search/thinking combos before accepting that.
+              personaUnknownResult = merged;
+              continue;
+            }
+
+            return merged;
           } catch (error) {
             lastError =
               error instanceof Error
@@ -246,6 +273,45 @@ export function createGeminiProvider(): RecipeProvider {
             continue;
           }
         }
+      }
+
+      if (personaUnknownResult !== undefined) {
+        // Every combo above resolved to "persona unknown". One last,
+        // maximally-directed attempt before accepting the fallback — skipped
+        // when this call is itself already a schema-repair retry, so we
+        // never stack two different retry mechanisms in one pass.
+        if (!input.repairOf) {
+          try {
+            const intensifiedInput: ProviderInput = {
+              ...input,
+              repairOf: buildPersonaIntensifyPrompt(
+                extractPersonaQuery(input.userPrompt),
+              ),
+            };
+            const response = await callGemini({
+              apiKey,
+              model,
+              input: intensifiedInput,
+              useSearch: true,
+              thinkingBudget: THINKING_BUDGET_DEEP,
+            });
+
+            if (response.ok) {
+              const { text, candidate } = await parseGeminiResponse(response);
+              if (text) {
+                const parsed = extractJson(text);
+                const fromSearch = groundingSources(
+                  candidate?.groundingMetadata?.groundingChunks,
+                );
+                return mergeSources(parsed, fromSearch);
+              }
+            }
+          } catch {
+            // Fall through to the already-valid fallback below.
+          }
+        }
+
+        return personaUnknownResult;
       }
 
       throw new UpstreamError(lastError);

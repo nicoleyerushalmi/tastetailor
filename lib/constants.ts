@@ -35,6 +35,11 @@ export const HISTORY_PAGE_SIZE = 12;
 export const MIN_SERVINGS = 1;
 export const MAX_SERVINGS = 24;
 
+/** DB retention cap on recipes.chat_log (~20 user/assistant turn pairs). */
+export const MAX_CHAT_LOG_ENTRIES = 40;
+/** How many recent chat_log entries are sent back to the model per refine call. */
+export const MAX_CHAT_LOG_PROMPT_ENTRIES = 20;
+
 export type DietType = (typeof DIET_TYPES)[number];
 export type AllergyOption = (typeof ALLERGY_OPTIONS)[number];
 export type GoalOption = (typeof GOAL_OPTIONS)[number];

@@ -6,6 +6,14 @@ export const MOCK_REFUSE_KEYWORD = "homework";
 /** Persona string that forces persona_applied: false in mock. */
 export const MOCK_UNKNOWN_PERSONA = "__unknown_persona__";
 
+/** Marker buildRefinePrompt() emits; used to route mock output for refine requests. */
+export const MOCK_REFINE_MARKER = "MODE: refine";
+
+function extractRefineMessage(userPrompt: string): string {
+  const match = userPrompt.match(/NEW USER REQUEST:\s*([\s\S]*?)(?:\n\n|$)/i);
+  return match?.[1]?.trim() ?? "";
+}
+
 function fixtureRecipe(overrides: Record<string, unknown> = {}) {
   return {
     title: "Herb Chicken Bowl",
@@ -64,6 +72,30 @@ export function createMockProvider(): RecipeProvider {
           },
           persona_applied: false,
         };
+      }
+
+      if (haystack.includes(MOCK_REFINE_MARKER.toLowerCase())) {
+        const message = extractRefineMessage(input.userPrompt);
+        const lowerMessage = message.toLowerCase();
+        const changeSummary = lowerMessage.includes("vegan")
+          ? "Swapped animal products for plant-based alternatives."
+          : lowerMessage.includes("spic")
+            ? "Increased the heat level as requested."
+            : "Applied the requested change.";
+
+        return fixtureRecipe({
+          change_summary: changeSummary,
+          insights: {
+            summary: `Refined per request: "${message}". ${changeSummary}`,
+            substitutions: [],
+            sources: [
+              {
+                label: "TasteTailor mock fixture",
+                note: "Deterministic offline provider (refine)",
+              },
+            ],
+          },
+        });
       }
 
       const unknownPersona = haystack.includes(MOCK_UNKNOWN_PERSONA.toLowerCase());

@@ -44,6 +44,8 @@ export const AiRecipeOutputSchema = z.object({
     return value;
   }, z.boolean().optional().default(false)),
   refusal_reason: z.string().trim().max(500).optional(),
+  /** Only populated for recipe refinements; omitted for fresh generations. */
+  change_summary: z.string().trim().max(300).optional(),
 });
 
 /** Looser schema used when the model refuses — recipe fields may be placeholders. */

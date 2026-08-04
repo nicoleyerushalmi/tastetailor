@@ -5,9 +5,12 @@ import { AddToShoppingListButton } from "@/components/recipe/AddToShoppingListBu
 import { IngredientList } from "@/components/recipe/IngredientList";
 import { InsightsBox } from "@/components/recipe/InsightsBox";
 import { RecipeHeader } from "@/components/recipe/RecipeHeader";
+import { RefineChat } from "@/components/recipe/RefineChat";
 import { ServingScaler } from "@/components/recipe/ServingScaler";
 import { StepList } from "@/components/recipe/StepList";
-import type { Ingredient, RecipeInsights } from "@/types/recipe";
+import { Toast } from "@/components/ui/Toast";
+import { mapApiError } from "@/lib/generate/mapApiError";
+import type { ChatLogEntry, Ingredient, RecipeInsights } from "@/types/recipe";
 
 export type RecipeDetailClientProps = {
   recipeId: string;
@@ -20,6 +23,17 @@ export type RecipeDetailClientProps = {
   ingredients: Ingredient[];
   steps: string[];
   insights: RecipeInsights;
+  chatLog: ChatLogEntry[];
+};
+
+type RecipeState = {
+  title: string;
+  servingsBase: number;
+  ingredients: Ingredient[];
+  steps: string[];
+  insights: RecipeInsights;
+  personaFallbackUsed: boolean;
+  chatLog: ChatLogEntry[];
 };
 
 export function RecipeDetailClient({
@@ -33,46 +47,120 @@ export function RecipeDetailClient({
   ingredients,
   steps,
   insights,
+  chatLog,
 }: RecipeDetailClientProps) {
+  const [recipe, setRecipe] = useState<RecipeState>({
+    title,
+    servingsBase,
+    ingredients,
+    steps,
+    insights,
+    personaFallbackUsed,
+    chatLog,
+  });
   const [uiServings, setUiServings] = useState(servingsBase);
+  const [refineLoading, setRefineLoading] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  async function submitRefine(message: string): Promise<boolean> {
+    setRefineLoading(true);
+    setRefineError(null);
+
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/refine`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const mapped = mapApiError(payload);
+        setRefineError(
+          mapped.formError ??
+            mapped.fieldErrors.message ??
+            "Something went wrong. Please try again.",
+        );
+        return false;
+      }
+
+      const updated = payload.recipe;
+      setRecipe({
+        title: updated.title,
+        servingsBase: updated.servings_base,
+        ingredients: updated.ingredients,
+        steps: updated.steps,
+        insights: updated.insights,
+        personaFallbackUsed: updated.persona_fallback_used,
+        chatLog: updated.chat_log ?? [],
+      });
+      setUiServings(updated.servings_base);
+      setToast("Recipe updated");
+      return true;
+    } catch {
+      setRefineError("Something went wrong. Please try again.");
+      return false;
+    } finally {
+      setRefineLoading(false);
+    }
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
       <RecipeHeader
         recipeId={recipeId}
-        title={title}
+        title={recipe.title}
         mode={mode}
-        servingsBase={servingsBase}
+        servingsBase={recipe.servingsBase}
         personaQuery={personaQuery}
         isFavorite={isFavorite}
       />
 
       <ServingScaler
-        servingsBase={servingsBase}
+        servingsBase={recipe.servingsBase}
         value={uiServings}
         onChange={setUiServings}
       />
 
       <IngredientList
-        ingredients={ingredients}
-        servingsBase={servingsBase}
+        ingredients={recipe.ingredients}
+        servingsBase={recipe.servingsBase}
         uiServings={uiServings}
       />
 
-      <StepList steps={steps} />
+      <StepList steps={recipe.steps} />
 
       <AddToShoppingListButton
         recipeId={recipeId}
-        ingredients={ingredients}
-        servingsBase={servingsBase}
+        ingredients={recipe.ingredients}
+        servingsBase={recipe.servingsBase}
         uiServings={uiServings}
       />
 
       <InsightsBox
-        insights={insights}
-        fallbackUsed={personaFallbackUsed}
+        insights={recipe.insights}
+        fallbackUsed={recipe.personaFallbackUsed}
         personaQuery={personaQuery}
+        retryLoading={refineLoading}
+        onRetryPersona={
+          personaQuery
+            ? () =>
+                submitRefine(
+                  `Please search again for "${personaQuery}"'s actual recipe for this dish before falling back to a generic version.`,
+                )
+            : undefined
+        }
       />
+
+      <RefineChat
+        chatLog={recipe.chatLog}
+        loading={refineLoading}
+        error={refineError}
+        onSubmit={submitRefine}
+      />
+
+      <Toast message={toast} tone="success" onDismiss={() => setToast(null)} />
     </main>
   );
 }

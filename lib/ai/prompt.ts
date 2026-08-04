@@ -1,4 +1,7 @@
+import { findKnownCreator } from "@/lib/persona-known-creators";
+import { chatLogForPrompt } from "@/lib/recipes/chat-log";
 import type { ProfileRow } from "@/types/profile";
+import type { ChatLogEntry, Ingredient } from "@/types/recipe";
 import type { GenerateRequest } from "@/lib/validation/generate";
 
 export function buildSystemPrompt() {
@@ -22,6 +25,7 @@ CREATOR / PERSONA (critical)
 - If you know that creator AND you know their recipe for the requested dish (or can
   identify it from search/context), reproduce THAT recipe as faithfully as possible.
   Do NOT invent a loosely "inspired by" version when the real recipe is known.
+- If a "Known reference" site is given for the creator, search that domain first.
 - Only then apply the minimum changes needed for allergies / diet_type / goals.
   List those changes in insights.substitutions.
 - Set persona_applied=true only when you actually followed that creator's recipe
@@ -40,6 +44,14 @@ SOURCES (required)
 ADAPT MODE
 - The user pastes a free-text recipe (title, ingredients, and steps may be mixed).
 - Parse it into structured ingredients and steps, then adapt to the profile / persona rules above.
+
+REFINE MODE
+- The user already has a saved recipe and is asking for a specific change
+  (e.g. an ingredient swap, more spice, a diet adjustment).
+- Apply ONLY the requested change; keep everything else from the current recipe
+  intact unless the change requires it.
+- Return the full updated recipe (not a diff).
+- Fill change_summary with 1-2 sentences describing what changed, for a running chat log.
 
 INSIGHTS
 - Always fill insights.summary with plain-language explanation.
@@ -62,9 +74,42 @@ OUTPUT
     },
     "persona_applied": boolean,
     "refused": boolean,
-    "refusal_reason"?: string
+    "refusal_reason"?: string,
+    "change_summary"?: string   // only for recipe refinements
   }
 - When refused=true, you may use empty/placeholder recipe fields; the server discards the recipe.`;
+}
+
+function profileLines(profile: ProfileRow): string[] {
+  return [
+    "USER PROFILE",
+    `- display_name: ${profile.display_name ?? "null"}`,
+    `- diet_type: ${profile.diet_type}`,
+    `- allergies: [${profile.allergies.join(", ")}]   // hard exclude`,
+    `- goals: [${profile.goals.join(", ")}]`,
+    `- preferences_notes: ${profile.preferences_notes ?? "null"}`,
+  ];
+}
+
+/** Directive search guidance for the TASK block, anchored to a known site when we have one. */
+function personaSearchInstruction(
+  personaQuery: string | null,
+  dishHint: string,
+): string[] {
+  if (!personaQuery) return [];
+
+  const known = findKnownCreator(personaQuery);
+  if (known?.website) {
+    return [
+      `- Known reference for "${known.name}": primary site ${known.website}` +
+        `${known.style ? ` (style: ${known.style})` : ""}.`,
+      `  Search that domain specifically (e.g. "${known.website} ${dishHint}") before searching more broadly.`,
+    ];
+  }
+
+  return [
+    `- Use google_search for "${personaQuery} ${dishHint} recipe" before concluding you don't know it.`,
+  ];
 }
 
 export function buildUserPrompt(
@@ -72,12 +117,7 @@ export function buildUserPrompt(
   request: GenerateRequest,
 ) {
   const lines: string[] = [
-    "USER PROFILE",
-    `- display_name: ${profile.display_name ?? "null"}`,
-    `- diet_type: ${profile.diet_type}`,
-    `- allergies: [${profile.allergies.join(", ")}]   // hard exclude`,
-    `- goals: [${profile.goals.join(", ")}]`,
-    `- preferences_notes: ${profile.preferences_notes ?? "null"}`,
+    ...profileLines(profile),
     "",
     `MODE: ${request.mode}`,
     "",
@@ -105,11 +145,13 @@ export function buildUserPrompt(
   if (request.mode === "adapt") {
     lines.push(
       "- Parse the pasted recipe into structured form.",
+      ...personaSearchInstruction(request.persona_query, "this recipe"),
       "- If persona_query is set and you know that creator's version of this dish, use their recipe as the base (do not invent).",
       "- Adapt only as needed for the profile; list sources used.",
     );
   } else {
     lines.push(
+      ...personaSearchInstruction(request.persona_query, request.dish_name),
       "- If persona_query is set and you know that creator's recipe for dish_name, reproduce it (do not invent a generic stand-in).",
       "- Otherwise invent a complete profile-matched recipe.",
       "- Always list sources (creator, links, or 'original TasteTailor recipe').",
@@ -125,4 +167,68 @@ export function buildRepairPrompt(zodErrorSummary: string) {
 ${zodErrorSummary}
 
 Return corrected JSON only, matching the schema exactly. Include insights.sources. No markdown.`;
+}
+
+/** Used only for the final, intensified retry when persona_applied came back false. */
+export function buildPersonaIntensifyPrompt(personaQuery: string | null) {
+  const known = personaQuery ? findKnownCreator(personaQuery) : undefined;
+  const siteHint = known?.website
+    ? ` Their primary site is ${known.website}${known.style ? ` (style: ${known.style})` : ""} — search that domain specifically.`
+    : "";
+
+  return `Before answering, you must actually use the google_search tool to look for "${personaQuery ?? "the requested creator"}"'s recipe for this exact dish (creator name + dish name, their site/blog/YouTube, and recipe aggregators).${siteHint} Only set persona_applied=false if a real search genuinely turns up nothing usable. Return JSON only per system schema.`;
+}
+
+export function buildRefinePrompt(
+  profile: ProfileRow,
+  recipe: {
+    title: string;
+    servings_base: number;
+    ingredients: Ingredient[];
+    steps: string[];
+    persona_query: string | null;
+  },
+  chatLog: ChatLogEntry[],
+  message: string,
+) {
+  const lines: string[] = [
+    ...profileLines(profile),
+    "",
+    "MODE: refine",
+    "",
+    "CURRENT RECIPE",
+    `- title: ${recipe.title}`,
+    `- servings_base: ${recipe.servings_base}`,
+    "- ingredients:",
+    ...recipe.ingredients.map((item) =>
+      `  - ${item.quantity} ${item.unit} ${item.name}`.replace(/\s+/g, " ").trimEnd(),
+    ),
+    "- steps:",
+    ...recipe.steps.map((step, index) => `  ${index + 1}. ${step}`),
+    `- persona_query: ${recipe.persona_query ?? "null"}`,
+  ];
+
+  const trimmedLog = chatLogForPrompt(chatLog);
+  if (trimmedLog.length > 0) {
+    lines.push("", "CHAT HISTORY");
+    for (const entry of trimmedLog) {
+      lines.push(`${entry.role === "user" ? "User" : "Assistant"}: ${entry.message}`);
+    }
+  }
+
+  lines.push(
+    "",
+    `NEW USER REQUEST: ${message}`,
+    "",
+    "TASK",
+    "- Apply only the requested change to the current recipe above.",
+    "- Still hard-respect allergies / diet_type / goals from the profile, even if the request conflicts with them — adapt the request instead of violating a hard constraint.",
+    "- If persona_query is set, keep following that creator's style unless the request explicitly says otherwise.",
+    "- Return the FULL updated recipe (all ingredients and steps, not a diff) — the server overwrites the recipe with your response.",
+    "- Include change_summary: 1-2 sentences describing what changed, written for a chat log.",
+    "- If the request is not a valid culinary change (off-topic, unsafe, etc.), set refused=true as usual.",
+    "Return JSON only per system schema.",
+  );
+
+  return lines.join("\n");
 }

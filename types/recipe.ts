@@ -20,6 +20,12 @@ export type RecipeInsights = {
   sources?: RecipeSource[];
 };
 
+export type ChatLogEntry = {
+  role: "user" | "assistant";
+  message: string;
+  created_at: string;
+};
+
 export type RecipeRow = {
   id: string;
   user_id: string;
@@ -33,7 +39,9 @@ export type RecipeRow = {
   insights: RecipeInsights;
   source_input: Record<string, unknown>;
   is_favorite: boolean;
+  chat_log: ChatLogEntry[];
   created_at: string;
+  updated_at: string;
 };
 
 export type RecipeSummary = {

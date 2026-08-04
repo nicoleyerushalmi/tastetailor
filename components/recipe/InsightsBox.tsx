@@ -1,9 +1,12 @@
+import { Button } from "@/components/ui/Button";
 import type { RecipeInsights } from "@/types/recipe";
 
 type InsightsBoxProps = {
   insights: RecipeInsights;
   fallbackUsed?: boolean;
   personaQuery?: string | null;
+  onRetryPersona?: () => void;
+  retryLoading?: boolean;
 };
 
 function isHttpUrl(value: string | undefined) {
@@ -20,6 +23,8 @@ export function InsightsBox({
   insights,
   fallbackUsed,
   personaQuery,
+  onRetryPersona,
+  retryLoading,
 }: InsightsBoxProps) {
   const sources = insights.sources ?? [];
 
@@ -27,11 +32,24 @@ export function InsightsBox({
     <div className="flex flex-col gap-4">
       {fallbackUsed && personaQuery ? (
         <div
-          className="rounded-md border border-[var(--color-border)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink)]"
+          className="flex flex-col items-start gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink)]"
           role="status"
         >
-          We couldn’t find “{personaQuery}”’s recipe for this dish — here’s a
-          version tailored to your profile instead.
+          <p>
+            We couldn’t find “{personaQuery}”’s recipe for this dish — here’s
+            a version tailored to your profile instead.
+          </p>
+          {onRetryPersona ? (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={retryLoading}
+              onClick={onRetryPersona}
+              className="h-9 px-3 text-xs"
+            >
+              Try again
+            </Button>
+          ) : null}
         </div>
       ) : null}
 

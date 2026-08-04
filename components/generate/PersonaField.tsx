@@ -1,5 +1,6 @@
 "use client";
 
+import { KNOWN_CREATORS } from "@/lib/persona-known-creators";
 import { PERSONA_SHORTCUTS } from "@/lib/persona-shortcuts";
 import { TextField } from "@/components/ui/TextField";
 
@@ -20,7 +21,13 @@ export function PersonaField({ value, onChange, error }: PersonaFieldProps) {
         error={error}
         placeholder="e.g. Ottolenghi, Binging with Babish, weeknight quick"
         maxLength={120}
+        list="known-creators-list"
       />
+      <datalist id="known-creators-list">
+        {KNOWN_CREATORS.map((creator) => (
+          <option key={creator.name} value={creator.name} />
+        ))}
+      </datalist>
       <div className="flex flex-wrap gap-2">
         {PERSONA_SHORTCUTS.map((shortcut) => (
           <button

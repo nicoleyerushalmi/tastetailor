@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { RecipeDetailClient } from "@/components/recipe/RecipeDetailClient";
 import { createClient } from "@/lib/supabase/server";
-import type { Ingredient, RecipeInsights, RecipeRow } from "@/types/recipe";
+import type { ChatLogEntry, Ingredient, RecipeInsights, RecipeRow } from "@/types/recipe";
 
 type RecipeDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -31,6 +31,7 @@ export default async function RecipeDetailPage({
     substitutions: [],
     sources: [],
   }) as RecipeInsights;
+  const chatLog = (recipe.chat_log ?? []) as ChatLogEntry[];
 
   return (
     <RecipeDetailClient
@@ -44,6 +45,7 @@ export default async function RecipeDetailPage({
       ingredients={ingredients}
       steps={steps}
       insights={insights}
+      chatLog={chatLog}
     />
   );
 }
