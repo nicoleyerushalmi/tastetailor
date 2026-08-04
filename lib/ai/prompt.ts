@@ -37,7 +37,10 @@ CREATOR / PERSONA (critical)
 SOURCES (required)
 - Always fill insights.sources with the data sources you used.
 - When a creator was requested, include that creator (and recipe name / URL if known).
-- Prefer real titles and URLs when available (search results, cookbooks, official pages).
+- Only include a URL if a search result actually returned it. Never invent a URL, and
+  never cite a "known reference" site you were only given as a search hint unless a
+  search result confirms it is real and live — omit the url field instead (label-only
+  citation) if you did not verify it. A wrong link is worse than no link.
 - If you only used the pasted user recipe text, cite it as label "User-provided recipe".
 - If sources are uncertain, still list them with an honest note (e.g. "from training knowledge").
 
@@ -101,9 +104,11 @@ function personaSearchInstruction(
   const known = findKnownCreator(personaQuery);
   if (known?.website) {
     return [
-      `- Known reference for "${known.name}": primary site ${known.website}` +
-        `${known.style ? ` (style: ${known.style})` : ""}.`,
-      `  Search that domain specifically (e.g. "${known.website} ${dishHint}") before searching more broadly.`,
+      `- Possible reference for "${known.name}": ${known.website}` +
+        `${known.style ? ` (style: ${known.style})` : ""}. This is an unverified hint, not a`,
+      `  confirmed fact — it may be outdated or wrong. Search that domain specifically`,
+      `  (e.g. "${known.website} ${dishHint}") before searching more broadly, but only cite`,
+      `  it as a source if search results actually confirm it is real and live.`,
     ];
   }
 
@@ -173,10 +178,10 @@ Return corrected JSON only, matching the schema exactly. Include insights.source
 export function buildPersonaIntensifyPrompt(personaQuery: string | null) {
   const known = personaQuery ? findKnownCreator(personaQuery) : undefined;
   const siteHint = known?.website
-    ? ` Their primary site is ${known.website}${known.style ? ` (style: ${known.style})` : ""} — search that domain specifically.`
+    ? ` A possible (unverified) site to try: ${known.website}${known.style ? ` (style: ${known.style})` : ""} — search that domain specifically, but confirm it resolves before citing it.`
     : "";
 
-  return `Before answering, you must actually use the google_search tool to look for "${personaQuery ?? "the requested creator"}"'s recipe for this exact dish (creator name + dish name, their site/blog/YouTube, and recipe aggregators).${siteHint} Only set persona_applied=false if a real search genuinely turns up nothing usable. Return JSON only per system schema.`;
+  return `Before answering, you must actually use the google_search tool to look for "${personaQuery ?? "the requested creator"}"'s recipe for this exact dish (creator name + dish name, their site/blog/YouTube, and recipe aggregators).${siteHint} Only set persona_applied=false if a real search genuinely turns up nothing usable. Never cite a URL that search did not actually confirm — omit the url field rather than guess. Return JSON only per system schema.`;
 }
 
 export function buildRefinePrompt(
