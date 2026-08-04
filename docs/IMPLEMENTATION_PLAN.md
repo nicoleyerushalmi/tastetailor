@@ -15,11 +15,11 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 4 — AI generation | Completed | `mock` + `gemini`, paste-to-adapt, sources, creator-first prompts |
 | 5 — Recipe detail | Completed | Scaler, favorite, delete, add-to-list merge, insights/sources |
 | 6 — History and favorites | Completed | Paginated `RecipeCard` grids, `?page=` search param, favorites filter |
-| 7 — Shopping list and export | Pending | Upsert from detail works; list UI/export not built |
+| 7 — Shopping list and export | Completed | Checkbox toggle, delete row, clear-all, clipboard export |
 | 8 — Polish and deploy | Pending | Landing exists; Vercel/README/smoke still open |
 | 9 — Tests, scale/security docs, presentation | Pending | Vitest configured; no test files yet |
 
-**Phases 0–6 done; 7–9 remain.**
+**Phases 0–7 done; 8–9 remain.**
 
 ---
 
@@ -32,10 +32,11 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 3. Generate (scratch dish or paste recipe to adapt) with optional creator  
 4. Gemini (or mock) returns structured recipe + sources  
 5. Recipe detail: scale servings, favorite, delete, add scaled ingredients to shopping list  
+6. History and favorites: paginated lists, favorites filter  
+7. Shopping list: check off, remove, clear all, export to clipboard  
 
 **Still stubs / unfinished**
 
-- `/shopping-list` — placeholder (rows can already exist in DB from “Add to shopping list”)  
 - Vercel production deploy, README course polish, automated tests, scale/security writeups  
 
 **Stack in use**
@@ -213,12 +214,16 @@ Page state lives in the `?page=` search param so it survives refresh. `RecipeCar
 
 ```text
 lib/shopping/merge.ts       normalizeName(), normalizeUnit(), mergeQuantity()  // done in Phase 5
-lib/shopping/exportText.ts  formatShoppingListForExport(items)               // todo
+lib/shopping/exportText.ts  formatShoppingListForExport(items)               // done
 ```
 
 Add-to-list logic (done in Phase 5): scale to `uiServings`, normalize each ingredient, then upsert on the `(user_id, name, unit)` unique constraint, summing quantity on conflict and appending the recipe id to `source_recipe_ids`.
 
-Still to build: `/shopping-list` checkbox UI, delete row, clear-all, and `ExportListButton` clipboard export:
+**Status:** Completed. `app/(app)/shopping-list/page.tsx` fetches all rows (RSC, ordered unchecked-first) and hands them to `components/shopping/ShoppingListClient.tsx`, which keeps a local list copy and owns the mutations (same direct-Supabase-from-client pattern as `FavoriteButton`/`DeleteRecipeButton` — RLS enforces ownership, no new API route):
+
+- `ShoppingListItem.tsx` — checkbox toggles `is_checked` (optimistic, reverts on error), Remove button deletes the row (optimistic, reverts on error)
+- `ClearListButton.tsx` — confirm-guarded `delete().eq("user_id", ...)`, empties local state
+- `ExportListButton.tsx` — `formatShoppingListForExport()` → `navigator.clipboard.writeText()` → Toast
 
 ```text
 Shopping list - TasteTailor
@@ -255,4 +260,4 @@ Default: ship on `main` for this small team. Optional short-lived branches (`cur
 
 ## Next step
 
-**Phase 7 — Shopping list and export:** replace the `/shopping-list` placeholder with checkbox UI, delete row, clear-all, and `ExportListButton` clipboard export.
+**Phase 8 — Polish and deploy:** loading/error boundaries per route group, Vercel deploy with env vars, add the Vercel URL to Supabase Auth redirect URLs, smoke test the live URL, update `README.md`.
