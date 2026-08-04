@@ -182,7 +182,7 @@ async function parseGeminiResponse(response: Response) {
 
 export function createGeminiProvider(): RecipeProvider {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
   if (!apiKey) {
     throw new UpstreamError("GEMINI_API_KEY is not configured");

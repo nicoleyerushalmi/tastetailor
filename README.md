@@ -27,7 +27,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key (public by design; RLS enforces access) |
 | `AI_PROVIDER` | Yes | `mock` or `gemini` |
 | `GEMINI_API_KEY` | Only if `AI_PROVIDER=gemini` | Server-only, never sent to the browser |
-| `GEMINI_MODEL` | No | Defaults to `gemini-2.5-flash` |
+| `GEMINI_MODEL` | No | Defaults to `gemini-flash-latest`. Pinned versions like `gemini-2.5-flash` may 404 for newer API keys ("no longer available to new users") — the `-latest` alias tracks whatever Google currently recommends. |
 | `GENERATIONS_PER_DAY` | No | Per-user daily generation cap, defaults to 20 |
 
 ## Scripts
