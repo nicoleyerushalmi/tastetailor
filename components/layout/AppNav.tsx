@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
   { href: "/generate", label: "Generate" },
@@ -13,6 +15,16 @@ const NAV_ITEMS = [
 
 export function AppNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur">
@@ -23,25 +35,35 @@ export function AppNav() {
         >
           TasteTailor
         </Link>
-        <nav className="flex flex-wrap gap-1" aria-label="App">
-          {NAV_ITEMS.map((item) => {
-            const active =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
-                  active
-                    ? "bg-[var(--color-accent-soft)] text-[var(--color-ink)]"
-                    : "text-[var(--color-ink-muted)] hover:bg-white hover:text-[var(--color-ink)]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex flex-wrap items-center gap-2">
+          <nav className="flex flex-wrap gap-1" aria-label="App">
+            {NAV_ITEMS.map((item) => {
+              const active =
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                    active
+                      ? "bg-[var(--color-accent-soft)] text-[var(--color-ink)]"
+                      : "text-[var(--color-ink-muted)] hover:bg-white hover:text-[var(--color-ink)]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="rounded-md px-3 py-1.5 text-sm font-medium text-[var(--color-ink-muted)] transition hover:bg-white hover:text-[var(--color-ink)] disabled:opacity-50"
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
+        </div>
       </div>
     </header>
   );
