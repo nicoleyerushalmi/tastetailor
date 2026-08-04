@@ -16,10 +16,10 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 5 — Recipe detail | Completed | Scaler, favorite, delete, add-to-list merge, insights/sources |
 | 6 — History and favorites | Completed | Paginated `RecipeCard` grids, `?page=` search param, favorites filter |
 | 7 — Shopping list and export | Completed | Checkbox toggle, delete row, clear-all, clipboard export |
-| 8 — Polish and deploy | Pending | Landing exists; Vercel/README/smoke still open |
+| 8 — Polish and deploy | In progress | Loading/error/not-found boundaries + README done; Vercel deploy needs dashboard access |
 | 9 — Tests, scale/security docs, presentation | Pending | Vitest configured; no test files yet |
 
-**Phases 0–7 done; 8–9 remain.**
+**Phases 0–7 done; 8 in progress (deploy pending); 9 remains.**
 
 ---
 
@@ -244,6 +244,17 @@ Already have:
 - Smoke test the full flow on the live URL.
 - Update `README.md` with local run instructions and the env var table (course deliverable).
 
+**Status:** Partially completed.
+
+- `app/(app)/loading.tsx` — shared skeleton/spinner while RSC data fetches (History, Favorites, Shopping List, Recipe detail, etc.)
+- `app/(app)/error.tsx` — client error boundary for the app group, copy per technical design §10 ("Something went wrong. Please try again.")
+- `app/(app)/recipes/[id]/not-found.tsx` — branded 404 for the existing `notFound()` call in the recipe detail page (previously fell through to the generic Next 404)
+- `app/not-found.tsx` — branded 404 for any unmatched route, links back to `/`
+- Landing page (`app/page.tsx`) confirmed sufficient — value prop + both CTAs already present, no changes needed
+- `README.md` — fixed a stale/wrong line claiming an OpenAI key was needed (the app uses Gemini); added the real env var table and a deploy checklist
+
+**Still open — requires dashboard access, not code:** push to GitHub if not already, import into Vercel, set the six env vars in the Vercel project, add the deployed URL to Supabase Auth's redirect allow-list, then smoke test the live URL.
+
 ---
 
 ## Phase 9 — Remaining course deliverables
@@ -260,4 +271,4 @@ Default: ship on `main` for this small team. Optional short-lived branches (`cur
 
 ## Next step
 
-**Phase 8 — Polish and deploy:** loading/error boundaries per route group, Vercel deploy with env vars, add the Vercel URL to Supabase Auth redirect URLs, smoke test the live URL, update `README.md`.
+**Finish Phase 8:** Vercel deploy (push to GitHub → import into Vercel → set env vars → add the deployed URL to Supabase Auth redirect allow-list → smoke test live). This needs dashboard access, not code — see the README's "Deploy" section for the exact steps.
