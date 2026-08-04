@@ -2,27 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_GENERATIONS_PER_DAY } from "@/lib/constants";
 
 export async function refundGenerationSlot() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("daily_generation_count")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.daily_generation_count <= 0) return;
-
-  await supabase
-    .from("profiles")
-    .update({
-      daily_generation_count: profile.daily_generation_count - 1,
-    })
-    .eq("id", user.id);
+  try {
+    const supabase = await createClient();
+    await supabase.rpc("refund_generation_slot");
+  } catch (error) {
+    console.error("[refundGenerationSlot] failed:", error);
+  }
 }
 
 export function generationsPerDay() {

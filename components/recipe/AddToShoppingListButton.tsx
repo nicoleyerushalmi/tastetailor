@@ -73,10 +73,26 @@ export function AddToShoppingListButton({
       byKey.set(`${row.name}|${row.unit}`, row);
     }
 
+    // Merge ingredients that normalize to the same (name, unit) within this
+    // recipe first, so the upsert below never has two rows targeting the
+    // same conflict key in one statement.
+    const incoming = new Map<
+      string,
+      { name: string; unit: string; quantity: number; displayName: string }
+    >();
     for (const item of scaled) {
       const name = normalizeName(item.name);
       const unit = normalizeUnit(item.unit ?? "");
       const key = `${name}|${unit}`;
+      const prior = incoming.get(key);
+      if (prior) {
+        prior.quantity = mergeQuantity(prior.quantity, item.quantity);
+      } else {
+        incoming.set(key, { name, unit, quantity: item.quantity, displayName: item.name.trim() });
+      }
+    }
+
+    const rows = Array.from(incoming.entries()).map(([key, agg]) => {
       const current = byKey.get(key);
 
       if (current) {
@@ -84,54 +100,42 @@ export function AddToShoppingListButton({
           ? current.source_recipe_ids
           : [...current.source_recipe_ids, recipeId];
 
-        const { data: updated, error } = await supabase
-          .from("shopping_list_items")
-          .update({
-            quantity: mergeQuantity(current.quantity, item.quantity),
-            source_recipe_ids: sourceIds,
-            display_name: current.display_name || item.name.trim(),
-          })
-          .eq("id", current.id)
-          .select("*")
-          .single();
-
-        if (error) {
-          setToastTone("error");
-          setToast("Could not update your shopping list.");
-          setLoading(false);
-          return;
-        }
-
-        byKey.set(key, updated as ShoppingListItemRow);
-      } else {
-        const { data: inserted, error } = await supabase
-          .from("shopping_list_items")
-          .insert({
-            user_id: user.id,
-            name,
-            display_name: item.name.trim(),
-            quantity: item.quantity,
-            unit,
-            is_checked: false,
-            source_recipe_ids: [recipeId],
-          })
-          .select("*")
-          .single();
-
-        if (error) {
-          setToastTone("error");
-          setToast("Could not update your shopping list.");
-          setLoading(false);
-          return;
-        }
-
-        byKey.set(key, inserted as ShoppingListItemRow);
+        return {
+          user_id: user.id,
+          name: agg.name,
+          display_name: current.display_name || agg.displayName,
+          quantity: mergeQuantity(current.quantity, agg.quantity),
+          unit: agg.unit,
+          is_checked: current.is_checked,
+          source_recipe_ids: sourceIds,
+        };
       }
+
+      return {
+        user_id: user.id,
+        name: agg.name,
+        display_name: agg.displayName,
+        quantity: agg.quantity,
+        unit: agg.unit,
+        is_checked: false,
+        source_recipe_ids: [recipeId],
+      };
+    });
+
+    const { error: upsertError } = await supabase
+      .from("shopping_list_items")
+      .upsert(rows, { onConflict: "user_id,name,unit" });
+
+    setLoading(false);
+
+    if (upsertError) {
+      setToastTone("error");
+      setToast("Could not update your shopping list.");
+      return;
     }
 
     setToastTone("success");
     setToast("Added to your shopping list.");
-    setLoading(false);
   }
 
   return (

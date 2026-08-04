@@ -178,6 +178,8 @@ export async function POST(request: Request) {
     );
   }
 
+  // Every branch above that leaves `parsed.success` false already returned;
+  // this only narrows the type for TypeScript.
   if (!parsed.success) {
     await refundGenerationSlot();
     return NextResponse.json(

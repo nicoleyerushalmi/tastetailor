@@ -67,11 +67,7 @@ export function createMockProvider(): RecipeProvider {
       }
 
       const unknownPersona = haystack.includes(MOCK_UNKNOWN_PERSONA.toLowerCase());
-      const hasPersona =
-        /persona_query:\s*(?!null\b).+/i.test(input.userPrompt) &&
-        !/persona_query:\s*null/i.test(
-          input.userPrompt.match(/persona_query:\s*.+/i)?.[0] ?? "persona_query: null",
-        );
+      const hasPersona = /persona_query:\s*(?!null\b).+/i.test(input.userPrompt);
 
       return fixtureRecipe({
         persona_applied: hasPersona && !unknownPersona,
