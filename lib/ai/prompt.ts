@@ -62,6 +62,11 @@ INSIGHTS
 - Scratch mode: substitutions may be empty; summary explains profile-driven choices and
   whether a creator recipe was used.
 
+IMAGE QUERY
+- For fresh generates (not refine), set image_query to a short English Unsplash-style
+  search phrase for a plated photo of THIS dish (e.g. "fluffy buttermilk pancakes syrup").
+- No people, logos, or text overlays in the phrase. Keep it under ~80 characters.
+
 OUTPUT
 - Respond with a single JSON object only (no markdown fences, no prose outside JSON).
 - Match this schema exactly:
@@ -78,7 +83,8 @@ OUTPUT
     "persona_applied": boolean,
     "refused": boolean,
     "refusal_reason"?: string,
-    "change_summary"?: string   // only for recipe refinements
+    "change_summary"?: string,   // only for recipe refinements
+    "image_query"?: string       // fresh generates: short dish photo search phrase
   }
 - When refused=true, you may use empty/placeholder recipe fields; the server discards the recipe.`;
 }

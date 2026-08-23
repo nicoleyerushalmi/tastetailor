@@ -46,6 +46,8 @@ export const AiRecipeOutputSchema = z.object({
   refusal_reason: z.string().trim().max(500).optional(),
   /** Only populated for recipe refinements; omitted for fresh generations. */
   change_summary: z.string().trim().max(300).optional(),
+  /** Short English photo search phrase for Unsplash (fresh generates). */
+  image_query: z.string().trim().min(1).max(120).optional(),
 });
 
 /** Looser schema used when the model refuses — recipe fields may be placeholders. */

@@ -27,6 +27,10 @@ export type RecipeDetailClientProps = {
   steps: string[];
   insights: RecipeInsights;
   chatLog: ChatLogEntry[];
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageCreditName?: string | null;
+  imageCreditUrl?: string | null;
 };
 
 type RecipeState = {
@@ -51,6 +55,10 @@ export function RecipeDetailClient({
   steps,
   insights,
   chatLog,
+  imageUrl,
+  imageAlt,
+  imageCreditName,
+  imageCreditUrl,
 }: RecipeDetailClientProps) {
   const reduceMotion = useReducedMotion();
   const [recipe, setRecipe] = useState<RecipeState>({
@@ -140,15 +148,44 @@ export function RecipeDetailClient({
         />
       </motion.div>
 
-      <div className="relative h-40 overflow-hidden border border-[var(--color-border)] sm:h-48">
-        <Image
-          src="/images/recipe-ambient.jpg"
-          alt=""
-          fill
-          className="object-cover"
-          sizes="(max-width: 1024px) 100vw, 960px"
-        />
-        <div className="absolute inset-0 bg-[var(--color-ink)]/20" />
+      <div className="flex flex-col gap-2">
+        <div className="relative h-40 overflow-hidden border border-[var(--color-border)] sm:h-52">
+          <Image
+            src={imageUrl?.trim() || "/images/recipe-ambient.jpg"}
+            alt={imageAlt?.trim() || ""}
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 960px"
+            priority
+          />
+          <div className="absolute inset-0 bg-[var(--color-ink)]/20" />
+        </div>
+        {imageUrl && imageCreditName ? (
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            Photo by{" "}
+            {imageCreditUrl ? (
+              <a
+                href={imageCreditUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-[var(--color-border)] underline-offset-2 hover:text-[var(--color-ink)]"
+              >
+                {imageCreditName}
+              </a>
+            ) : (
+              imageCreditName
+            )}{" "}
+            on{" "}
+            <a
+              href="https://unsplash.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-[var(--color-border)] underline-offset-2 hover:text-[var(--color-ink)]"
+            >
+              Unsplash
+            </a>
+          </p>
+        ) : null}
       </div>
 
       <motion.div

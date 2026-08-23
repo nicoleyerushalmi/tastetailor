@@ -3,6 +3,7 @@ import { getRecipeProvider } from "@/lib/ai";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/ai/prompt";
 import { generationsPerDay, refundGenerationSlot } from "@/lib/ai/rate-limit";
 import { outcomeToErrorResponse, runRecipeGeneration } from "@/lib/ai/run-generation";
+import { fetchRecipeImage } from "@/lib/images/unsplash";
 import { getCurrentUserAndProfile } from "@/lib/profile/get-profile";
 import { GenerateRequestSchema } from "@/lib/validation/generate";
 import { zodIssues } from "@/lib/validation/zod-issues";
@@ -84,8 +85,6 @@ export async function POST(request: Request) {
 
   const outcome = await runRecipeGeneration({ provider, systemPrompt, userPrompt });
   if (outcome.kind !== "success") {
-    // outcomeToErrorResponse returns non-null for every kind reaching this
-    // branch; the fallback only satisfies TypeScript's return type.
     return (
       outcomeToErrorResponse(outcome) ??
       NextResponse.json(
@@ -99,7 +98,11 @@ export async function POST(request: Request) {
   const personaQuery = generateRequest.persona_query ?? null;
   const personaFallbackUsed = Boolean(personaQuery) && !ai.persona_applied;
 
-  const { data: recipe, error: insertError } = await supabase
+  // Photo attach is best-effort and must never block saving the recipe
+  // (e.g. Unsplash down, or image_* columns not migrated yet).
+  const imagePromise = fetchRecipeImage(ai.image_query?.trim() || ai.title);
+
+  const { data: inserted, error: insertError } = await supabase
     .from("recipes")
     .insert({
       user_id: user.id,
@@ -119,7 +122,7 @@ export async function POST(request: Request) {
     )
     .single();
 
-  if (insertError || !recipe) {
+  if (insertError || !inserted) {
     await refundGenerationSlot();
     console.error("[api/generate] insert error:", insertError);
     return NextResponse.json(
@@ -129,6 +132,43 @@ export async function POST(request: Request) {
       },
       { status: 500 },
     );
+  }
+
+  let recipe = {
+    ...inserted,
+    image_url: null as string | null,
+    image_alt: null as string | null,
+    image_credit_name: null as string | null,
+    image_credit_url: null as string | null,
+  };
+
+  const image = await imagePromise;
+  if (image) {
+    const { error: imageError } = await supabase
+      .from("recipes")
+      .update({
+        image_url: image.url,
+        image_alt: image.alt,
+        image_credit_name: image.creditName,
+        image_credit_url: image.creditUrl,
+      })
+      .eq("id", inserted.id)
+      .eq("user_id", user.id);
+
+    if (imageError) {
+      console.warn(
+        "[api/generate] recipe saved but image attach skipped:",
+        imageError.message,
+      );
+    } else {
+      recipe = {
+        ...recipe,
+        image_url: image.url,
+        image_alt: image.alt,
+        image_credit_name: image.creditName,
+        image_credit_url: image.creditUrl,
+      };
+    }
   }
 
   return NextResponse.json({ recipe }, { status: 201 });

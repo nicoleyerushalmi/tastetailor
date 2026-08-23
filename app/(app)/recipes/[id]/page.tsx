@@ -46,6 +46,10 @@ export default async function RecipeDetailPage({
       steps={steps}
       insights={insights}
       chatLog={chatLog}
+      imageUrl={recipe.image_url}
+      imageAlt={recipe.image_alt}
+      imageCreditName={recipe.image_credit_name}
+      imageCreditUrl={recipe.image_credit_url}
     />
   );
 }

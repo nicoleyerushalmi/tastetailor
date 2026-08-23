@@ -20,6 +20,7 @@ export default function GeneratePage() {
             src="/images/generate.jpg"
             alt=""
             fill
+            priority
             className="object-cover"
             sizes="40vw"
           />

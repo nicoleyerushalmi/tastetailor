@@ -40,6 +40,10 @@ export type RecipeRow = {
   source_input: Record<string, unknown>;
   is_favorite: boolean;
   chat_log: ChatLogEntry[];
+  image_url: string | null;
+  image_alt: string | null;
+  image_credit_name: string | null;
+  image_credit_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -50,6 +54,8 @@ export type RecipeSummary = {
   created_at: string;
   is_favorite: boolean;
   mode: "adapt" | "scratch";
+  image_url?: string | null;
+  image_alt?: string | null;
 };
 
 export type ShoppingListItemRow = {

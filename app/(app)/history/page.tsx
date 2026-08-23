@@ -23,7 +23,9 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const supabase = await createClient();
   let query = supabase
     .from("recipes")
-    .select("id,title,created_at,is_favorite,mode", { count: "exact" })
+    .select("id,title,created_at,is_favorite,mode,image_url,image_alt", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false });
 
   if (filter === "adapt" || filter === "scratch") {

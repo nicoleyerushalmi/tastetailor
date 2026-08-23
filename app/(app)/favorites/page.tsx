@@ -21,7 +21,9 @@ export default async function FavoritesPage({ searchParams }: FavoritesPageProps
   const supabase = await createClient();
   const { data, count } = await supabase
     .from("recipes")
-    .select("id,title,created_at,is_favorite,mode", { count: "exact" })
+    .select("id,title,created_at,is_favorite,mode,image_url,image_alt", {
+      count: "exact",
+    })
     .eq("is_favorite", true)
     .order("created_at", { ascending: false })
     .range(from, to);

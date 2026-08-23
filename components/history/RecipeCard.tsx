@@ -13,6 +13,8 @@ export function RecipeCard({
   created_at,
   is_favorite,
   mode,
+  image_url,
+  image_alt,
   imagePosition = "center",
 }: RecipeCardProps) {
   const date = new Date(created_at).toLocaleDateString("en-US", {
@@ -21,6 +23,9 @@ export function RecipeCard({
     day: "numeric",
   });
 
+  const src = image_url?.trim() || "/images/recipe-ambient.jpg";
+  const alt = image_alt?.trim() || "";
+
   return (
     <Link
       href={`/recipes/${id}`}
@@ -28,11 +33,11 @@ export function RecipeCard({
     >
       <div className="relative h-36 w-full overflow-hidden">
         <Image
-          src="/images/recipe-ambient.jpg"
-          alt=""
+          src={src}
+          alt={alt}
           fill
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
-          style={{ objectPosition: imagePosition }}
+          style={image_url ? undefined : { objectPosition: imagePosition }}
           sizes="(max-width: 640px) 100vw, 33vw"
         />
         <div className="absolute inset-0 bg-[var(--color-ink)]/15" />
