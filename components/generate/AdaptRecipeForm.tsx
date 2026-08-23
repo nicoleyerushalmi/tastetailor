@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PersonaField } from "@/components/generate/PersonaField";
+import { GeneratingOverlay } from "@/components/generate/GeneratingOverlay";
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
 import { mapApiError } from "@/lib/generate/mapApiError";
@@ -57,7 +58,9 @@ export function AdaptRecipeForm({ onGenerated }: AdaptRecipeFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <>
+      <GeneratingOverlay open={loading} />
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <TextArea
         label="Paste a recipe"
         name="recipe_text"
@@ -84,5 +87,6 @@ export function AdaptRecipeForm({ onGenerated }: AdaptRecipeFormProps) {
         Generate recipe
       </Button>
     </form>
+    </>
   );
 }

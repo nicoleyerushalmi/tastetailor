@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { AddToShoppingListButton } from "@/components/recipe/AddToShoppingListButton";
+import { CookModeView } from "@/components/recipe/CookModeView";
 import { IngredientList } from "@/components/recipe/IngredientList";
 import { InsightsBox } from "@/components/recipe/InsightsBox";
 import { RecipeHeader } from "@/components/recipe/RecipeHeader";
@@ -65,6 +66,7 @@ export function RecipeDetailClient({
   const [refineLoading, setRefineLoading] = useState(false);
   const [refineError, setRefineError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [cookMode, setCookMode] = useState(false);
 
   async function submitRefine(message: string): Promise<boolean> {
     setRefineLoading(true);
@@ -110,6 +112,17 @@ export function RecipeDetailClient({
   }
 
   return (
+    <>
+      {cookMode ? (
+        <CookModeView
+          title={recipe.title}
+          servings={uiServings}
+          servingsBase={recipe.servingsBase}
+          ingredients={recipe.ingredients}
+          steps={recipe.steps}
+          onClose={() => setCookMode(false)}
+        />
+      ) : null}
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:py-12">
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 12 }}
@@ -123,6 +136,7 @@ export function RecipeDetailClient({
           servingsBase={recipe.servingsBase}
           personaQuery={personaQuery}
           isFavorite={isFavorite}
+          onCookMode={() => setCookMode(true)}
         />
       </motion.div>
 
@@ -189,5 +203,6 @@ export function RecipeDetailClient({
 
       <Toast message={toast} tone="success" onDismiss={() => setToast(null)} />
     </main>
+    </>
   );
 }

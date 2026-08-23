@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PersonaField } from "@/components/generate/PersonaField";
+import { GeneratingOverlay } from "@/components/generate/GeneratingOverlay";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { mapApiError } from "@/lib/generate/mapApiError";
@@ -57,7 +58,9 @@ export function ScratchDishForm({ onGenerated }: ScratchDishFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <>
+      <GeneratingOverlay open={loading} />
+      <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <TextField
         label="Dish name"
         name="dish_name"
@@ -81,5 +84,6 @@ export function ScratchDishForm({ onGenerated }: ScratchDishFormProps) {
         Generate recipe
       </Button>
     </form>
+    </>
   );
 }

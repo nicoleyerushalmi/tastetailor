@@ -73,3 +73,27 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .cook-mode,
+  .cook-mode * {
+    visibility: visible !important;
+  }
+
+  .cook-mode {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .cook-mode .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+

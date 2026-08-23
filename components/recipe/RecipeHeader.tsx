@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { ChefHat } from "lucide-react";
 import { DeleteRecipeButton } from "@/components/recipe/DeleteRecipeButton";
 import { FavoriteButton } from "@/components/recipe/FavoriteButton";
+import { Button } from "@/components/ui/Button";
 
 type RecipeHeaderProps = {
   recipeId: string;
@@ -9,6 +11,7 @@ type RecipeHeaderProps = {
   servingsBase: number;
   personaQuery: string | null;
   isFavorite: boolean;
+  onCookMode?: () => void;
 };
 
 export function RecipeHeader({
@@ -18,6 +21,7 @@ export function RecipeHeader({
   servingsBase,
   personaQuery,
   isFavorite,
+  onCookMode,
 }: RecipeHeaderProps) {
   return (
     <div className="flex flex-col gap-5">
@@ -28,7 +32,18 @@ export function RecipeHeader({
         >
           ← History
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onCookMode ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCookMode}
+              className="h-10 gap-2 px-3"
+            >
+              <ChefHat className="h-4 w-4" strokeWidth={2} />
+              Cook mode
+            </Button>
+          ) : null}
           <FavoriteButton recipeId={recipeId} isFavorite={isFavorite} />
           <DeleteRecipeButton recipeId={recipeId} title={title} />
         </div>

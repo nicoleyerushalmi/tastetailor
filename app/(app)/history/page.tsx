@@ -1,3 +1,4 @@
+import { HistoryFilterChips, parseHistoryFilter } from "@/components/history/HistoryFilterChips";
 import { Pagination } from "@/components/history/Pagination";
 import { RecipeCard } from "@/components/history/RecipeCard";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -9,24 +10,33 @@ import type { RecipeSummary } from "@/types/recipe";
 const POSITIONS = ["20% 30%", "70% 40%", "40% 70%", "60% 20%", "30% 60%"];
 
 type HistoryPageProps = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; filter?: string }>;
 };
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, filter: filterParam } = await searchParams;
   const page = Math.max(0, Number.parseInt(pageParam ?? "0", 10) || 0);
+  const filter = parseHistoryFilter(filterParam);
   const from = page * HISTORY_PAGE_SIZE;
   const to = from + HISTORY_PAGE_SIZE - 1;
 
   const supabase = await createClient();
-  const { data, count } = await supabase
+  let query = supabase
     .from("recipes")
     .select("id,title,created_at,is_favorite,mode", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(from, to);
+    .order("created_at", { ascending: false });
+
+  if (filter === "adapt" || filter === "scratch") {
+    query = query.eq("mode", filter);
+  } else if (filter === "favorites") {
+    query = query.eq("is_favorite", true);
+  }
+
+  const { data, count } = await query.range(from, to);
 
   const recipes = (data ?? []) as RecipeSummary[];
   const hasNext = from + recipes.length < (count ?? 0);
+  const emptyBecauseFilter = recipes.length === 0 && filter !== "all";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:py-12">
@@ -35,16 +45,27 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         title="History"
         lede="Every recipe you’ve fitted — open one to scale, refine, or shop."
       />
+      <HistoryFilterChips active={filter} />
       {recipes.length === 0 ? (
         <EmptyState
-          title={page > 0 ? "No more recipes" : "No recipes yet"}
+          title={
+            page > 0
+              ? "No more recipes"
+              : emptyBecauseFilter
+                ? "Nothing in this filter"
+                : "No recipes yet"
+          }
           description={
             page > 0
               ? "You've reached the end of your history."
-              : "Generated recipes will show up here."
+              : emptyBecauseFilter
+                ? "Try another filter, or generate a new recipe."
+                : "Generated recipes will show up here."
           }
-          actionLabel={page > 0 ? "Back to history" : "Go to generate"}
-          actionHref={page > 0 ? "/history" : "/generate"}
+          actionLabel={
+            page > 0 || emptyBecauseFilter ? "Show all" : "Go to generate"
+          }
+          actionHref={page > 0 || emptyBecauseFilter ? "/history" : "/generate"}
         />
       ) : (
         <>
@@ -57,7 +78,12 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
               />
             ))}
           </div>
-          <Pagination basePath="/history" page={page} hasNext={hasNext} />
+          <Pagination
+            basePath="/history"
+            page={page}
+            hasNext={hasNext}
+            query={{ filter }}
+          />
         </>
       )}
     </main>
