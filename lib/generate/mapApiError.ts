@@ -18,6 +18,8 @@ export function mapApiError(payload: {
     rate_limited: "Daily generation limit reached. Come back tomorrow.",
     invalid_ai_output: "Couldn't build a valid recipe. Please try again.",
     onboarding_required: "Finish onboarding before generating recipes.",
+    ai_unavailable:
+      "The AI service is temporarily busy. Please try again in a moment.",
   };
 
   return {

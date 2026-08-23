@@ -39,10 +39,10 @@ export function CheckboxGroup({
           return (
             <label
               key={option.value}
-              className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-sm transition ${
                 checked
-                  ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink)]"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-ink-muted)]"
+                  ? "border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]"
+                  : "border-[var(--color-border)] bg-transparent text-[var(--color-ink-muted)] hover:border-[var(--color-ink-muted)]"
               }`}
             >
               <input
@@ -58,7 +58,9 @@ export function CheckboxGroup({
           );
         })}
       </div>
-      {error ? <span className="text-xs text-red-600">{error}</span> : null}
+      {error ? (
+        <span className="text-xs text-[var(--color-danger)]">{error}</span>
+      ) : null}
     </fieldset>
   );
 }

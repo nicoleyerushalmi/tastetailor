@@ -1,3 +1,6 @@
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import type { RecipeInsights } from "@/types/recipe";
 
@@ -27,17 +30,23 @@ export function InsightsBox({
   retryLoading,
 }: InsightsBoxProps) {
   const sources = insights.sources ?? [];
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div className="flex flex-col gap-4">
+    <motion.div
+      className="flex flex-col gap-5"
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       {fallbackUsed && personaQuery ? (
         <div
-          className="flex flex-col items-start gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink)]"
+          className="flex flex-col items-start gap-2 border border-[var(--color-border)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink)]"
           role="status"
         >
           <p>
-            We couldn’t find “{personaQuery}”’s recipe for this dish — here’s
-            a version tailored to your profile instead.
+            We couldn’t find “{personaQuery}”’s recipe for this dish — here’s a
+            version tailored to your profile instead.
           </p>
           {onRetryPersona ? (
             <Button
@@ -54,8 +63,8 @@ export function InsightsBox({
       ) : null}
 
       {sources.length > 0 ? (
-        <section className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-white px-5 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-ink-muted)]">
+        <section className="flex flex-col gap-2 border-l-2 border-[var(--color-accent)] pl-4">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
             Sources
           </h2>
           <ul className="space-y-2">
@@ -87,8 +96,8 @@ export function InsightsBox({
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+      <section className="flex flex-col gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <h2 className="font-display text-lg font-semibold text-[var(--color-ink)]">
           Insights
         </h2>
         <p className="text-[var(--color-ink-muted)]">{insights.summary}</p>
@@ -112,6 +121,6 @@ export function InsightsBox({
           </ul>
         ) : null}
       </section>
-    </div>
+    </motion.div>
   );
 }

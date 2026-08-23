@@ -1,5 +1,6 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import { MAX_SERVINGS, MIN_SERVINGS } from "@/lib/constants";
 
 type ServingScalerProps = {
@@ -24,15 +25,15 @@ export function ServingScaler({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <span className="text-sm font-medium text-[var(--color-ink)]">Servings</span>
-      <div className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border)] bg-white p-1">
+      <div className="inline-flex items-center gap-1 border border-[var(--color-border)] bg-[var(--color-surface)] p-1">
         <button
           type="button"
           aria-label="Decrease servings"
-          className="flex h-9 w-9 items-center justify-center rounded text-lg text-[var(--color-ink)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center text-[var(--color-ink)] hover:bg-white disabled:opacity-40"
           disabled={value <= min}
           onClick={() => onChange(clamp(value - 1))}
         >
-          −
+          <Minus className="h-4 w-4" strokeWidth={2} />
         </button>
         <span className="min-w-8 text-center text-sm font-semibold text-[var(--color-ink)]">
           {value}
@@ -40,11 +41,11 @@ export function ServingScaler({
         <button
           type="button"
           aria-label="Increase servings"
-          className="flex h-9 w-9 items-center justify-center rounded text-lg text-[var(--color-ink)] hover:bg-[var(--color-surface)] disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center text-[var(--color-ink)] hover:bg-white disabled:opacity-40"
           disabled={value >= max}
           onClick={() => onChange(clamp(value + 1))}
         >
-          +
+          <Plus className="h-4 w-4" strokeWidth={2} />
         </button>
       </div>
       {value !== servingsBase ? (

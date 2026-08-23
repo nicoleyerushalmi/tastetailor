@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { getCurrentUserAndProfile } from "@/lib/profile/get-profile";
 
 export default async function OnboardingPage() {
@@ -14,24 +15,13 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="relative mx-auto flex min-h-full w-full max-w-xl flex-1 flex-col gap-6 px-4 py-12 sm:px-6">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_rgba(194,106,58,0.12),_transparent_55%),linear-gradient(180deg,#f7f1e8_0%,#efe4d6_100%)]"
+    <main className="paper-grain mx-auto flex min-h-full w-full max-w-xl flex-1 flex-col gap-8 px-4 py-12 sm:px-6">
+      <PageHeader
+        eyebrow="TasteTailor"
+        title="Tell us how you eat"
+        lede="We use this once to shape every recipe to your diet, goals, and constraints."
       />
-      <div>
-        <p className="font-[family-name:var(--font-display)] text-lg text-[var(--color-ink)]">
-          TasteTailor
-        </p>
-        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl text-[var(--color-ink)] md:text-4xl">
-          Tell us how you eat
-        </h1>
-        <p className="mt-2 text-[var(--color-ink-muted)]">
-          We use this once to shape every recipe to your diet, goals, and
-          constraints.
-        </p>
-      </div>
-      <div className="rounded-xl border border-[var(--color-border)] bg-white/90 p-6 shadow-sm backdrop-blur">
+      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
         <OnboardingForm initial={profile} />
       </div>
     </main>

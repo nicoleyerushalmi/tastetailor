@@ -16,13 +16,16 @@ export function IngredientList({
   const scaled = scaleIngredients(ingredients, servingsBase, uiServings);
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+    <section className="flex flex-col gap-4">
+      <h2 className="font-display text-xl font-semibold text-[var(--color-ink)]">
         Ingredients
       </h2>
-      <ul className="list-disc space-y-1 pl-5 text-[var(--color-ink)]">
+      <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)] bg-[var(--color-surface)]">
         {scaled.map((item, index) => (
-          <li key={`${item.name}-${index}`}>
+          <li
+            key={`${item.name}-${index}`}
+            className="px-4 py-3 text-sm text-[var(--color-ink)]"
+          >
             {formatQuantity(item.quantity)}
             {item.unit ? ` ${item.unit}` : ""} {item.name}
           </li>

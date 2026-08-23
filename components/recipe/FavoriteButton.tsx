@@ -1,5 +1,6 @@
 "use client";
 
+import { Heart } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -34,13 +35,17 @@ export function FavoriteButton({ recipeId, isFavorite }: FavoriteButtonProps) {
       disabled={loading}
       aria-pressed={favorite}
       aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-md border text-lg transition ${
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-[var(--radius-control)] border transition ${
         favorite
           ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-          : "border-[var(--color-border)] bg-white text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+          : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
       }`}
     >
-      {favorite ? "♥" : "♡"}
+      <Heart
+        className="h-4 w-4"
+        strokeWidth={2}
+        fill={favorite ? "currentColor" : "none"}
+      />
     </button>
   );
 }

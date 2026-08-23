@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildRepairPrompt } from "@/lib/ai/prompt";
-import type { RecipeProvider } from "@/lib/ai/provider";
+import { UpstreamError, type RecipeProvider } from "@/lib/ai/provider";
 import { refundGenerationSlot } from "@/lib/ai/rate-limit";
 import {
   AiRecipeOutputSchema,
@@ -9,7 +9,7 @@ import {
 } from "@/lib/ai/schema";
 
 export type GenerationOutcome =
-  | { kind: "upstream_error" }
+  | { kind: "upstream_error"; status?: number; message?: string }
   | { kind: "refused"; reason: string | null }
   | { kind: "invalid" }
   | { kind: "success"; data: AiRecipeOutput };
@@ -34,6 +34,13 @@ export async function runRecipeGeneration(params: {
   } catch (error) {
     await refundGenerationSlot();
     console.error("[runRecipeGeneration] provider error:", error);
+    if (error instanceof UpstreamError) {
+      return {
+        kind: "upstream_error",
+        status: error.status,
+        message: error.message,
+      };
+    }
     return { kind: "upstream_error" };
   }
 
@@ -51,8 +58,15 @@ export async function runRecipeGeneration(params: {
         userPrompt,
         repairOf: buildRepairPrompt(summary),
       });
-    } catch {
+    } catch (error) {
       await refundGenerationSlot();
+      if (error instanceof UpstreamError) {
+        return {
+          kind: "upstream_error",
+          status: error.status,
+          message: error.message,
+        };
+      }
       return { kind: "upstream_error" };
     }
 
@@ -92,7 +106,22 @@ export function outcomeToErrorResponse(
   outcome: GenerationOutcome,
 ): NextResponse | null {
   switch (outcome.kind) {
-    case "upstream_error":
+    case "upstream_error": {
+      const busy =
+        outcome.status === 429 ||
+        outcome.status === 502 ||
+        outcome.status === 503 ||
+        outcome.status === 504;
+      if (busy) {
+        return NextResponse.json(
+          {
+            error: "ai_unavailable",
+            message:
+              "The AI service is temporarily busy. Please try again in a moment.",
+          },
+          { status: 503 },
+        );
+      }
       return NextResponse.json(
         {
           error: "server_error",
@@ -100,6 +129,7 @@ export function outcomeToErrorResponse(
         },
         { status: 500 },
       );
+    }
     case "refused":
       return NextResponse.json(
         {

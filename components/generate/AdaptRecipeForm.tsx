@@ -76,7 +76,7 @@ export function AdaptRecipeForm({ onGenerated }: AdaptRecipeFormProps) {
         error={fieldErrors.persona_query}
       />
       {formError ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-danger)]" role="alert">
           {formError}
         </p>
       ) : null}

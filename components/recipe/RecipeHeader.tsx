@@ -20,11 +20,11 @@ export function RecipeHeader({
   isFavorite,
 }: RecipeHeaderProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/history"
-          className="text-sm font-medium text-[var(--color-accent)] hover:underline"
+          className="text-sm font-medium text-[var(--color-ink-muted)] transition hover:text-[var(--color-ink)]"
         >
           ← History
         </Link>
@@ -33,13 +33,14 @@ export function RecipeHeader({
           <DeleteRecipeButton recipeId={recipeId} title={title} />
         </div>
       </div>
-      <header className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
-          {mode === "adapt" ? "Adapted recipe" : "From scratch"} · base{" "}
-          {servingsBase} servings
+      <header className="flex flex-col gap-3 border-b border-[var(--color-border)] pb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-muted)]">
+          {mode === "adapt" ? "Adapted recipe" : "From scratch"}
+          {" · "}
+          base {servingsBase} servings
           {personaQuery ? ` · ${personaQuery}` : ""}
         </p>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-ink)] md:text-4xl">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--color-ink)] md:text-5xl">
           {title}
         </h1>
       </header>

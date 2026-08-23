@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f1e8;
-  --foreground: #1f1712;
-  --color-ink: #1f1712;
-  --color-ink-muted: #6b5b4f;
-  --color-accent: #c26a3a;
-  --color-accent-hover: #a8562c;
-  --color-accent-soft: #f3e0d2;
-  --color-border: #e2d4c4;
-  --color-surface: #fff8f0;
+  --background: #e7e9e2;
+  --foreground: #141814;
+  --color-ink: #141814;
+  --color-ink-muted: #5a635a;
+  --color-accent: #d97706;
+  --color-accent-hover: #b45309;
+  --color-accent-soft: #fde7c3;
+  --color-border: #c9cfc2;
+  --color-surface: #f4f5f0;
+  --color-danger: #b42318;
+  --radius-control: 6px;
+  --shadow-soft: 0 12px 40px rgba(20, 24, 20, 0.08);
+  --space-section: clamp(4.5rem, 8vw, 7rem);
 }
 
 @theme inline {
@@ -23,4 +27,49 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.photo-veil {
+  background: linear-gradient(
+    105deg,
+    rgba(20, 24, 20, 0.72) 0%,
+    rgba(20, 24, 20, 0.45) 45%,
+    rgba(20, 24, 20, 0.25) 100%
+  );
+}
+
+.paper-grain {
+  position: relative;
+  isolation: isolate;
+}
+
+.paper-grain::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  mix-blend-mode: multiply;
+}
+
+.paper-grain > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

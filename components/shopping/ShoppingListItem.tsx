@@ -26,7 +26,7 @@ export function ShoppingListItem({ item, onToggle, onDelete }: ShoppingListItemP
   }
 
   return (
-    <li className="flex items-center gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <li className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
       <input
         type="checkbox"
         checked={item.is_checked}
@@ -49,7 +49,7 @@ export function ShoppingListItem({ item, onToggle, onDelete }: ShoppingListItemP
         onClick={handleDelete}
         disabled={pending}
         aria-label={`Remove ${item.display_name}`}
-        className="text-sm font-medium text-red-700 hover:text-red-800 disabled:opacity-50"
+        className="text-sm font-medium text-[var(--color-danger)] hover:text-[var(--color-danger)] disabled:opacity-50"
       >
         Remove
       </button>

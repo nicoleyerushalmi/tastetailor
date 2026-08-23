@@ -69,7 +69,7 @@ export function ShoppingListClient({ initialItems }: ShoppingListClientProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="sticky top-[4.25rem] z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--background)]/95 px-4 py-3 backdrop-blur-sm sm:mx-0 sm:border sm:border-[var(--color-border)] sm:bg-[var(--color-surface)] sm:px-4">
         <p className="text-sm text-[var(--color-ink-muted)]">
           {items.length} item{items.length === 1 ? "" : "s"}
         </p>
@@ -80,7 +80,7 @@ export function ShoppingListClient({ initialItems }: ShoppingListClientProps) {
       </div>
 
       {error ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-danger)]" role="alert">
           {error}
         </p>
       ) : null}

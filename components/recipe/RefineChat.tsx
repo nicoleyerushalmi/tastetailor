@@ -25,8 +25,8 @@ export function RefineChat({ chatLog, loading, error, onSubmit }: RefineChatProp
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-      <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+    <section className="flex flex-col gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+      <h2 className="font-display text-lg font-semibold text-[var(--color-ink)]">
         Refine this recipe
       </h2>
 
@@ -65,7 +65,7 @@ export function RefineChat({ chatLog, loading, error, onSubmit }: RefineChatProp
           maxLength={500}
         />
         {error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-[var(--color-danger)]" role="alert">
             {error}
           </p>
         ) : null}

@@ -16,9 +16,9 @@ type TabsProps = {
 
 export function Tabs({ items, value, onChange, children }: TabsProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div
-        className="flex gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-1"
+        className="flex gap-0 border-b border-[var(--color-border)]"
         role="tablist"
       >
         {items.map((item) => {
@@ -30,10 +30,10 @@ export function Tabs({ items, value, onChange, children }: TabsProps) {
               role="tab"
               aria-selected={selected}
               onClick={() => onChange(item.id)}
-              className={`flex-1 rounded px-3 py-2 text-sm font-medium transition ${
+              className={`relative -mb-px flex-1 px-3 py-2.5 text-sm font-medium transition ${
                 selected
-                  ? "bg-white text-[var(--color-ink)] shadow-sm"
-                  : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  ? "border-b-2 border-[var(--color-ink)] text-[var(--color-ink)]"
+                  : "border-b-2 border-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               }`}
             >
               {item.label}

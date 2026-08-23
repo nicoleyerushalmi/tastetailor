@@ -44,12 +44,12 @@ export function DeleteRecipeButton({ recipeId, title }: DeleteRecipeButtonProps)
         variant="ghost"
         loading={loading}
         onClick={onDelete}
-        className="h-10 px-3 text-red-700 hover:text-red-800"
+        className="h-10 px-3 text-[var(--color-danger)] hover:text-[var(--color-danger)]"
       >
         Delete
       </Button>
       {error ? (
-        <p className="text-xs text-red-600" role="alert">
+        <p className="text-xs text-[var(--color-danger)]" role="alert">
           {error}
         </p>
       ) : null}

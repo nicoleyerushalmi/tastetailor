@@ -29,16 +29,23 @@ export function PersonaField({ value, onChange, error }: PersonaFieldProps) {
         ))}
       </datalist>
       <div className="flex flex-wrap gap-2">
-        {PERSONA_SHORTCUTS.map((shortcut) => (
-          <button
-            key={shortcut}
-            type="button"
-            onClick={() => onChange(shortcut)}
-            className="rounded-md border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs text-[var(--color-ink-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-ink)]"
-          >
-            {shortcut}
-          </button>
-        ))}
+        {PERSONA_SHORTCUTS.map((shortcut) => {
+          const selected = value === shortcut;
+          return (
+            <button
+              key={shortcut}
+              type="button"
+              onClick={() => onChange(shortcut)}
+              className={`rounded-[var(--radius-control)] border px-2.5 py-1 text-xs transition ${
+                selected
+                  ? "border-[var(--color-ink)] bg-[var(--color-surface)] text-[var(--color-ink)]"
+                  : "border-[var(--color-border)] bg-transparent text-[var(--color-ink-muted)] hover:border-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              }`}
+            >
+              {shortcut}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

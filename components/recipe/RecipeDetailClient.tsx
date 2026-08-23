@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { AddToShoppingListButton } from "@/components/recipe/AddToShoppingListButton";
 import { IngredientList } from "@/components/recipe/IngredientList";
 import { InsightsBox } from "@/components/recipe/InsightsBox";
@@ -49,6 +51,7 @@ export function RecipeDetailClient({
   insights,
   chatLog,
 }: RecipeDetailClientProps) {
+  const reduceMotion = useReducedMotion();
   const [recipe, setRecipe] = useState<RecipeState>({
     title,
     servingsBase,
@@ -107,58 +110,82 @@ export function RecipeDetailClient({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
-      <RecipeHeader
-        recipeId={recipeId}
-        title={recipe.title}
-        mode={mode}
-        servingsBase={recipe.servingsBase}
-        personaQuery={personaQuery}
-        isFavorite={isFavorite}
-      />
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:py-12">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <RecipeHeader
+          recipeId={recipeId}
+          title={recipe.title}
+          mode={mode}
+          servingsBase={recipe.servingsBase}
+          personaQuery={personaQuery}
+          isFavorite={isFavorite}
+        />
+      </motion.div>
 
-      <ServingScaler
-        servingsBase={recipe.servingsBase}
-        value={uiServings}
-        onChange={setUiServings}
-      />
+      <div className="relative h-40 overflow-hidden border border-[var(--color-border)] sm:h-48">
+        <Image
+          src="/images/recipe-ambient.jpg"
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(max-width: 1024px) 100vw, 960px"
+        />
+        <div className="absolute inset-0 bg-[var(--color-ink)]/20" />
+      </div>
 
-      <IngredientList
-        ingredients={recipe.ingredients}
-        servingsBase={recipe.servingsBase}
-        uiServings={uiServings}
-      />
+      <motion.div
+        className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-12"
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.05, ease: "easeOut" }}
+      >
+        <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:self-start">
+          <ServingScaler
+            servingsBase={recipe.servingsBase}
+            value={uiServings}
+            onChange={setUiServings}
+          />
+          <IngredientList
+            ingredients={recipe.ingredients}
+            servingsBase={recipe.servingsBase}
+            uiServings={uiServings}
+          />
+          <AddToShoppingListButton
+            recipeId={recipeId}
+            ingredients={recipe.ingredients}
+            servingsBase={recipe.servingsBase}
+            uiServings={uiServings}
+          />
+        </div>
 
-      <StepList steps={recipe.steps} />
-
-      <AddToShoppingListButton
-        recipeId={recipeId}
-        ingredients={recipe.ingredients}
-        servingsBase={recipe.servingsBase}
-        uiServings={uiServings}
-      />
-
-      <InsightsBox
-        insights={recipe.insights}
-        fallbackUsed={recipe.personaFallbackUsed}
-        personaQuery={personaQuery}
-        retryLoading={refineLoading}
-        onRetryPersona={
-          personaQuery
-            ? () =>
-                submitRefine(
-                  `Please search again for "${personaQuery}"'s actual recipe for this dish before falling back to a generic version.`,
-                )
-            : undefined
-        }
-      />
-
-      <RefineChat
-        chatLog={recipe.chatLog}
-        loading={refineLoading}
-        error={refineError}
-        onSubmit={submitRefine}
-      />
+        <div className="flex flex-col gap-8">
+          <StepList steps={recipe.steps} />
+          <InsightsBox
+            insights={recipe.insights}
+            fallbackUsed={recipe.personaFallbackUsed}
+            personaQuery={personaQuery}
+            retryLoading={refineLoading}
+            onRetryPersona={
+              personaQuery
+                ? () =>
+                    submitRefine(
+                      `Please search again for "${personaQuery}"'s actual recipe for this dish before falling back to a generic version.`,
+                    )
+                : undefined
+            }
+          />
+          <RefineChat
+            chatLog={recipe.chatLog}
+            loading={refineLoading}
+            error={refineError}
+            onSubmit={submitRefine}
+          />
+        </div>
+      </motion.div>
 
       <Toast message={toast} tone="success" onDismiss={() => setToast(null)} />
     </main>

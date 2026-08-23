@@ -118,6 +118,14 @@ function looksPersonaUnknown(parsed: unknown): boolean {
   return record.persona_applied === false && record.refused !== true;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientGeminiStatus(status: number) {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
 async function callGemini(args: {
   apiKey: string;
   model: string;
@@ -159,17 +167,43 @@ async function callGemini(args: {
     body.tools = [{ google_search: {} }];
   }
 
-  try {
-    return await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch (error) {
-    throw new UpstreamError(
-      error instanceof Error ? error.message : "Gemini network error",
-    );
+  // High-demand 503s are usually brief — retry the same request a few times.
+  const maxAttempts = 3;
+  let lastNetworkError: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (
+        response.ok ||
+        !isTransientGeminiStatus(response.status) ||
+        attempt === maxAttempts - 1
+      ) {
+        return response;
+      }
+
+      await sleep(600 * 2 ** attempt);
+    } catch (error) {
+      lastNetworkError = error;
+      if (attempt === maxAttempts - 1) {
+        throw new UpstreamError(
+          error instanceof Error ? error.message : "Gemini network error",
+        );
+      }
+      await sleep(600 * 2 ** attempt);
+    }
   }
+
+  throw new UpstreamError(
+    lastNetworkError instanceof Error
+      ? lastNetworkError.message
+      : "Gemini network error",
+  );
 }
 
 type GeminiPayload = {
@@ -214,6 +248,7 @@ export function createGeminiProvider(): RecipeProvider {
         : [0];
 
       let lastError = "Gemini returned an empty response";
+      let lastHttpStatus: number | undefined;
       // A schema-shaped result where the model honestly couldn't apply the
       // persona — kept as a fallback in case the intensified retry below
       // fails outright, so an unresolved persona never turns into a 500.
@@ -232,8 +267,13 @@ export function createGeminiProvider(): RecipeProvider {
           if (!response.ok) {
             const body = await response.text().catch(() => "");
             lastError = `Gemini HTTP ${response.status}: ${body.slice(0, 300)}`;
-            // Tool + JSON combos often 400 — try next attempt.
-            if (response.status === 400 || response.status === 429) {
+            lastHttpStatus = response.status;
+            // Tool + JSON combos often 400; transient load may still fail after
+            // callGemini retries — try the next search/thinking combo.
+            if (
+              response.status === 400 ||
+              isTransientGeminiStatus(response.status)
+            ) {
               continue;
             }
             throw new UpstreamError(lastError, response.status);
@@ -314,7 +354,7 @@ export function createGeminiProvider(): RecipeProvider {
         return personaUnknownResult;
       }
 
-      throw new UpstreamError(lastError);
+      throw new UpstreamError(lastError, lastHttpStatus);
     },
   };
 }

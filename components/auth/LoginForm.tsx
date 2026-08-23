@@ -98,7 +98,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
         required
       />
       {formError ? (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--color-danger)]" role="alert">
           {formError}
         </p>
       ) : null}

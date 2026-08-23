@@ -1,9 +1,12 @@
 import { Pagination } from "@/components/history/Pagination";
 import { RecipeCard } from "@/components/history/RecipeCard";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HISTORY_PAGE_SIZE } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { RecipeSummary } from "@/types/recipe";
+
+const POSITIONS = ["20% 30%", "70% 40%", "40% 70%", "60% 20%", "30% 60%"];
 
 type HistoryPageProps = {
   searchParams: Promise<{ page?: string }>;
@@ -26,10 +29,12 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const hasNext = from + recipes.length < (count ?? 0);
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10 sm:px-6">
-      <h1 className="mb-6 font-[family-name:var(--font-display)] text-3xl text-[var(--color-ink)]">
-        History
-      </h1>
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:py-12">
+      <PageHeader
+        eyebrow="Library"
+        title="History"
+        lede="Every recipe you’ve fitted — open one to scale, refine, or shop."
+      />
       {recipes.length === 0 ? (
         <EmptyState
           title={page > 0 ? "No more recipes" : "No recipes yet"}
@@ -43,9 +48,13 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         />
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} {...recipe} />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {recipes.map((recipe, index) => (
+              <RecipeCard
+                key={recipe.id}
+                {...recipe}
+                imagePosition={POSITIONS[index % POSITIONS.length]}
+              />
             ))}
           </div>
           <Pagination basePath="/history" page={page} hasNext={hasNext} />
