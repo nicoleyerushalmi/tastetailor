@@ -60,7 +60,11 @@ export function ScratchDishForm({ onGenerated }: ScratchDishFormProps) {
   return (
     <>
       <GeneratingOverlay open={loading} />
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <form
+        onSubmit={onSubmit}
+        method="post"
+        className="flex flex-col gap-5"
+      >
       <TextField
         label="Dish name"
         name="dish_name"
