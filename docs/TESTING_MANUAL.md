@@ -1,11 +1,15 @@
 # TasteTailor — Manual test checklist
 
-Companion to [TESTING.md](./TESTING.md). Record pass/fail in course submission notes.
+Companion to [TESTING.md](./TESTING.md). Most IDs are automated; only rows marked ☐ need a human pass/fail for course submission notes.
 Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `e2e/`.
+
+**Still manual:** STRESS-03, STRESS-05, STRESS-07, SEC-05, FEAT-16, UI-05.
 
 **Precondition:** migration `0004_recipe_images` applied; email confirmation disabled for E2E accounts.
 
 **Test accounts:** `test@test.com` (A) and `testb@test.com` (B) — override via `E2E_*` env vars.
+
+**Optional:** `SUPABASE_SERVICE_ROLE_KEY` enables DB-04 (otherwise skipped).
 
 ---
 
@@ -24,19 +28,19 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 
 ---
 
-## Database (`DB-*`)
+## Database (`DB-*`) — automated in `e2e/database.spec.ts`
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| DB-01 | ☐ | `mode` check constraint (needs service-role SQL) |
-| DB-02 | ☐ | `servings_base` 1–24 |
-| DB-03 | ☐ | title length constraints |
-| DB-04 | ☐ | `handle_new_user` creates profile |
-| DB-05 | ☐ | shopping unique merge (partial E2E via add-to-list) |
+| DB-01 | ✅ auto | Bad `mode` → Postgres `23514` |
+| DB-02 | ✅ auto | `servings_base` out of 1–24 → `23514` |
+| DB-03 | ✅ auto | Empty / overlong title → `23514` |
+| DB-04 | ✅ auto | Needs `SUPABASE_SERVICE_ROLE_KEY`; skipped if unset |
+| DB-05 | ✅ auto | Unique `(user_id, name, unit)`; upsert keeps one row |
 | DB-06 | ✅ auto | UNIT-08 / STRESS-06 chat_log cap |
 | DB-07 | ✅ auto | generate with null images (API) |
-| DB-08 | ☐ | `0004_recipe_images` columns exist |
-| DB-09 | ☐ | delete strips `source_recipe_ids` |
+| DB-08 | ✅ auto | Select `image_*` columns succeeds |
+| DB-09 | ✅ auto | Delete recipe strips id from `source_recipe_ids` |
 
 ---
 
@@ -63,7 +67,7 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 | SEC-03 | ✅ auto | Seeded `<script>` title escaped |
 | SEC-04 | ✅ auto | Mock adapt injection (API) |
 | SEC-05 | ☐ | Live jailbreak persona (optional) |
-| SEC-06 | ☐ | Build chunk key scan (optional CI) |
+| SEC-06 | ✅ auto | `lib/security/client-bundle.test.ts` (needs `npm run build` first) |
 | SEC-07 | ✅ auto | API error shape |
 | SEC-08 | ✅ auto | gitignore hygiene |
 | SEC-09 | ✅ auto | Config unit + E2E no fetch to bad host |
@@ -90,4 +94,7 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 npm test
 # Free port 3000 (or set PW_REUSE_SERVER=1 only if already AI_PROVIDER=mock)
 npm run test:e2e
+# After a production build, scan client chunks for leaked API keys:
+npm run build
+npm run test:client-secrets
 ```
