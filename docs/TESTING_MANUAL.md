@@ -1,112 +1,47 @@
-# TasteTailor — Manual test checklist
+# TasteTailor — Manual checklist
 
-Companion to [TESTING.md](./TESTING.md). Most IDs are automated; only rows marked ☐ need a human pass/fail for course submission notes.
-Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `e2e/`.
+Companion to [TESTING.md](./TESTING.md). **Only items you still run by hand** (or opt-in live).  
+Everything else is automated — see [TESTING.md §14](./TESTING.md#14-implementation-mapping) for IDs → files and how to run `npm test` / `npm run test:e2e`.
 
-**Still manual:** STRESS-03, STRESS-07, SEC-05 (optional live), FEAT-16 (optional live), UI-05.
+Record pass/fail here for course submission notes.
 
-**Precondition:** migration `0004_recipe_images` applied; email confirmation disabled for E2E accounts.
-
-**Test accounts:** `test@test.com` (A) and `testb@test.com` (B) — override via `E2E_*` env vars.
-
-**Optional:** `SUPABASE_SERVICE_ROLE_KEY` enables DB-04 (otherwise skipped).
-**Optional live:** `npm run test:live` (Gemini + Unsplash; not in default CI).
+**Accounts (if needed):** `test@test.com` / `testb@test.com` (or `E2E_*` env).  
+**Precondition:** migration `0004_recipe_images` applied.
 
 ---
 
-## Privilege (`PRIV-*`) — automated in `e2e/privilege.spec.ts`
+## Required manual
 
-| ID | Result | Notes |
-| --- | --- | --- |
-| PRIV-01 | ✅ auto | B → A's recipe UUID → not found |
-| PRIV-02 | ✅ auto | B refine 404; favorite update 0 rows |
-| PRIV-03 | ✅ auto | B delete 0 rows; A still sees recipe |
-| PRIV-04 | ✅ auto | B history excludes A's marker title |
-| PRIV-05 | ✅ auto | Shopping list loads under B |
-| PRIV-06 | ✅ auto | B cannot toggle/delete A's shopping row |
-| PRIV-07 | ✅ auto | B cannot update A's profile |
-| PRIV-08 | ✅ auto | API unit + generate stamps `user_id` |
+| ID | Pass? | How to run | Pass criteria |
+| --- | --- | --- | --- |
+| **STRESS-07** | ☐ | With `AI_PROVIDER=gemini` and a real key, force or wait for a slow/503 upstream (or briefly break the key / exhaust quota). Generate once. | UI shows `ai_unavailable` (or retry succeeds); no crash; generation slot refunded on upstream failure. Mock retries already cover the code path in Vitest (UNIT-10–12). |
+| **UI-05** | ☐ | Throttle Network to Slow 3G (DevTools), open `/history`. | A loading skeleton (or equivalent busy UI) appears briefly before the list. |
 
 ---
 
-## Database (`DB-*`) — automated in `e2e/database.spec.ts`
+## Optional live smoke (not CI)
 
-| ID | Result | Notes |
-| --- | --- | --- |
-| DB-01 | ✅ auto | Bad `mode` → Postgres `23514` |
-| DB-02 | ✅ auto | `servings_base` out of 1–24 → `23514` |
-| DB-03 | ✅ auto | Empty / overlong title → `23514` |
-| DB-04 | ✅ auto | Needs `SUPABASE_SERVICE_ROLE_KEY`; skipped if unset |
-| DB-05 | ✅ auto | Unique `(user_id, name, unit)`; upsert keeps one row |
-| DB-06 | ✅ auto | UNIT-08 / STRESS-06 chat_log cap |
-| DB-07 | ✅ auto | generate with null images (API) |
-| DB-08 | ✅ auto | Select `image_*` columns succeeds |
-| DB-09 | ✅ auto | Delete recipe strips id from `source_recipe_ids` |
-
----
-
-## Stress (`STRESS-*`) — mostly automated in `app/api/generate/stress.test.ts`
-
-| ID | Result | Notes |
-| --- | --- | --- |
-| STRESS-01 | ✅ auto | 429 when slot claim false |
-| STRESS-02 | ✅ auto | 5 sequential generates → 201 |
-| STRESS-03 | ☐ | Two tabs near limit (needs counter reset) |
-| STRESS-04 | ✅ auto | 20k ok / 20_001 → 400 |
-| STRESS-05 | ✅ auto | `e2e/stress-shopping.spec.ts` — 50 seeded lines |
-| STRESS-06 | ✅ auto | chat_log trim to cap |
-| STRESS-07 | ☐ | Live Gemini 503 (UNIT covers mock retries) |
-
----
-
-## Security (`SEC-*`)
-
-| ID | Result | Notes |
-| --- | --- | --- |
-| SEC-01 | ✅ auto | Vitest `isHttpUrl` |
-| SEC-02 | ✅ auto | `e2e/security-ui.spec.ts` |
-| SEC-03 | ✅ auto | Seeded `<script>` title escaped |
-| SEC-04 | ✅ auto | Mock adapt injection (API) |
-| SEC-05 | ☐ live | `npm run test:live` (Gemini); still optional for course notes |
-| SEC-06 | ✅ auto | `lib/security/client-bundle.test.ts` (needs `npm run build` first) |
-| SEC-07 | ✅ auto | API error shape |
-| SEC-08 | ✅ auto | gitignore hygiene |
-| SEC-09 | ✅ auto | Config unit + E2E no fetch to bad host |
-| SEC-10 | ✅ auto | Client import boundary |
-
----
-
-## Live Unsplash / UI
-
-| ID | Result | Notes |
-| --- | --- | --- |
-| FEAT-16 | ☐ live | `npm run test:live` when `UNSPLASH_ACCESS_KEY` set |
-| UI-02 | ✅ auto | Auth form desktop + mobile |
-| UI-05 | ☐ | History skeleton (brittle) |
-| UI-09 | ✅ auto | Seeded photo credit |
-| UI-10 | ✅ auto | Mobile nav drawer |
-| UI-12 | ✅ auto | `ai_unavailable` via route mock |
-
----
-
-## Run automation
+Run instead of (or in addition to) ticking FEAT-16 / SEC-05 by hand:
 
 ```bash
-npm test
-# Free port 3000 (or set PW_REUSE_SERVER=1 only if already AI_PROVIDER=mock)
-npm run test:e2e
-# After a production build, scan client chunks for leaked API keys:
-npm run build
-npm run test:client-secrets
-```
-
-### Live smoke (opt-in, not CI)
-
-Covers **FEAT-16** and **SEC-05** with real Gemini (+ Unsplash when keyed).
-
-```bash
-# Requires GEMINI_API_KEY in .env.local
-# UNSPLASH_ACCESS_KEY required for FEAT-16 (otherwise that case skips)
-# Free port 3000 — playwright.live.config.ts starts next with AI_PROVIDER=gemini
+# GEMINI_API_KEY required; UNSPLASH_ACCESS_KEY for FEAT-16
+# Free port 3000 — see TESTING.md “How to run”
 npm run test:live
 ```
+
+| ID | Pass? | Notes |
+| --- | --- | --- |
+| **FEAT-16** | ☐ | Live Unsplash attach on generate; skip if no Unsplash key. |
+| **SEC-05** | ☐ | Jailbreak `persona_query`; response must not leak system-prompt markers. |
+
+---
+
+## Not on this checklist
+
+Automated coverage (do **not** re-run manually unless debugging):
+
+- Privilege `PRIV-*` → `e2e/privilege.spec.ts`
+- Database `DB-*` → `e2e/database.spec.ts` (DB-04 needs `SUPABASE_SERVICE_ROLE_KEY`)
+- Stress `STRESS-01`–`06` → Vitest + `e2e/stress-*.spec.ts`
+- Security `SEC-01`–`04`, `SEC-06`–`10` → Vitest / E2E / `test:client-secrets`
+- Happy path, auth gates, UI (except UI-05) → `e2e/*.spec.ts`

@@ -3,15 +3,34 @@ import { AUTH_FILE_A, clientFromStorageState, userIdFromStorageState } from "./e
 
 /** Reset the daily generation counter so E2E can keep creating recipes. */
 export async function resetGenerationBudget(storagePath: string = AUTH_FILE_A) {
+  await setGenerationBudget(0, storagePath);
+}
+
+/** Set daily_generation_count (and push reset_at into the future). */
+export async function setGenerationBudget(
+  count: number,
+  storagePath: string = AUTH_FILE_A,
+) {
   const supabase = await clientFromStorageState(storagePath);
   const userId = await userIdFromStorageState(storagePath);
+  const resetAt = new Date();
+  resetAt.setUTCDate(resetAt.getUTCDate() + 1);
   const { error } = await supabase
     .from("profiles")
-    .update({ daily_generation_count: 0 })
+    .update({
+      daily_generation_count: count,
+      generation_count_reset_at: resetAt.toISOString(),
+    })
     .eq("id", userId);
   if (error) {
-    throw new Error(`resetGenerationBudget failed: ${error.message}`);
+    throw new Error(`setGenerationBudget failed: ${error.message}`);
   }
+}
+
+export function generationsPerDayFromEnv(): number {
+  const raw = process.env.GENERATIONS_PER_DAY;
+  const parsed = raw ? Number.parseInt(raw, 10) : 20;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
 }
 
 /** Create a scratch recipe through the API (uses storage-state cookies). */

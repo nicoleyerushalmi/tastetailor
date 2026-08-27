@@ -51,7 +51,7 @@ Runs FEAT-16 (Unsplash attach) and SEC-05 (jailbreak persona) against real Gemin
 3. Use the same E2E accounts as the mock suite (`E2E_EMAIL` / `E2E_PASSWORD`, defaults in `.env.local.example`).
 4. Run: `npm run test:live`
 
-Skipped automatically when `GEMINI_API_KEY` is missing; FEAT-16 alone skips when Unsplash is unset. See [docs/TESTING.md](./docs/TESTING.md) and [docs/TESTING_MANUAL.md](./docs/TESTING_MANUAL.md).
+Skipped automatically when `GEMINI_API_KEY` is missing; FEAT-16 alone skips when Unsplash is unset. Spec + commands: [docs/TESTING.md](./docs/TESTING.md). Human leftovers only: [docs/TESTING_MANUAL.md](./docs/TESTING_MANUAL.md).
 
 ## Deploy
 

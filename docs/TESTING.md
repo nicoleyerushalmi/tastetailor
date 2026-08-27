@@ -3,7 +3,8 @@
 **Status:** Approved — automated suite implemented  
 **Related:** [PHASE_9_PLAN.md](./PHASE_9_PLAN.md), [TESTING_MANUAL.md](./TESTING_MANUAL.md), [TECHNICAL_DESIGN.md](./TECHNICAL_DESIGN.md) §15, [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-This document defines **what** we test and **how** we judge pass/fail. Automated tests map 1:1 to the IDs below. Remaining manual-only IDs are listed in [TESTING_MANUAL.md](./TESTING_MANUAL.md).
+This document defines **what** we test and **how** we judge pass/fail. Automated tests map 1:1 to the IDs below.  
+**Human checklist (only leftovers):** [TESTING_MANUAL.md](./TESTING_MANUAL.md).
 
 ---
 
@@ -24,7 +25,7 @@ This document defines **what** we test and **how** we judge pass/fail. Automated
 | API / integration | Vitest (+ mock AI) | `/api/generate`, refine error mapping, rate-limit behavior where testable |
 | UI / E2E | Playwright | Happy path, auth gates, privilege, security UI, DB constraints |
 | Repo / build scan | Vitest / Script | Secret hygiene, client-bundle key scan, server-only import boundaries (§8) |
-| Manual | Checklist | Concurrent-tab stress, live Gemini 503, brittle UI skeleton; optional live FEAT-16/SEC-05 via `npm run test:live` |
+| Manual | [TESTING_MANUAL.md](./TESTING_MANUAL.md) | Only **STRESS-07** and **UI-05**; optional live FEAT-16 / SEC-05 via `npm run test:live` |
 
 ### Environments
 
@@ -54,7 +55,9 @@ Optional env: `E2E_EMAIL` / `E2E_PASSWORD` (and `_B` pair); `SUPABASE_SERVICE_RO
 | Port 3000 free | Or `PW_REUSE_SERVER=1` with an already-running Gemini `next dev` |
 | E2E user A | Same accounts as mock E2E |
 
-Do **not** run `test:live` in default CI — nondeterministic quota/latency. Manual leftovers: [TESTING_MANUAL.md](./TESTING_MANUAL.md) ☐ rows (STRESS-03/07, UI-05).
+Do **not** run `test:live` in default CI — nondeterministic quota/latency.
+
+**Human leftovers** (procedures and pass/fail ticks): [TESTING_MANUAL.md](./TESTING_MANUAL.md) — **STRESS-07**, **UI-05**, plus optional live FEAT-16 / SEC-05.
 
 ---
 
@@ -232,7 +235,7 @@ the claims made in `SECURITY.md`.
 | UI-02 | Auth split layout | E2E | Photo + form on desktop; usable on mobile |
 | UI-03 | Generate waiting overlay | E2E | Overlay appears while request in flight; dismisses on success/error |
 | UI-04 | History filter chips | E2E | Active chip reflects `?filter=`; empty filter shows empty state |
-| UI-05 | History loading skeleton | Manual | Navigating to history shows skeleton briefly when slow |
+| UI-05 | History loading skeleton | Manual | Navigating to history shows skeleton briefly when slow. Intentionally not automated (timing-brittle). Checklist: [TESTING_MANUAL.md](./TESTING_MANUAL.md) |
 | UI-06 | Cook mode chrome | E2E | Full-screen cook view; Exit works |
 | UI-07 | Empty shopping list | E2E | Empty state + CTA to generate |
 | UI-08 | Empty favorites | E2E | Empty state copy + CTA |
@@ -269,11 +272,11 @@ MVP stress is **limit and burst validation**, not a full cloud load lab.
 | --- | --- | --- | --- |
 | STRESS-01 | Daily generation cap | API | After `GENERATIONS_PER_DAY` successful claims, next generate is 429 |
 | STRESS-02 | Rapid sequential generates | API | Under cap, all succeed or fail cleanly (no crash); slots consistent |
-| STRESS-03 | Concurrent generate (2 tabs) | Manual | Both handled; no corrupt recipes; at most one extra 429 near limit |
+| STRESS-03 | Concurrent generate (2 tabs) | E2E | Both handled; no corrupt recipes; with one slot left → one 201 and one 429 |
 | STRESS-04 | Near-max adapt paste (~20k) | API | At max accepted; over max 400 |
 | STRESS-05 | Shopping list many lines | E2E | 30+ items remain usable (check/export); no UI freeze for MVP size |
 | STRESS-06 | Long refine chat_log | Unit / API | After many refines, log trimmed to cap; refine still works |
-| STRESS-07 | Gemini slow / 503 | Manual | Retries and/or `ai_unavailable`; user can retry; slot refunded on upstream failure |
+| STRESS-07 | Gemini slow / 503 | Manual | Retries and/or `ai_unavailable`; user can retry; slot refunded on upstream failure. Intentionally not automated (cannot force a live 503); UNIT-10–12 cover mock retries. Checklist: [TESTING_MANUAL.md](./TESTING_MANUAL.md) |
 
 **Out of scope for Phase 9:** k6/ Locust multi-region load, DDoS simulation, chaos on Supabase.
 
@@ -347,24 +350,20 @@ generate treats the photo as best-effort.
 
 ## 14. Implementation mapping
 
-| Spec area | Automation |
-| --- | --- |
-| INV-*, EDGE-01–05, EDGE-10–11, FEAT-08 (logic), UNIT-01–20, SEC-01/08–10 | Vitest unit |
-| FEAT-04/05/12 (API), INV-12–16, AUTH-02/03/05, BP-06–08, EDGE-06–08, SEC-04/07, STRESS-01/02/04/06, DB-07 | Vitest API with mock provider / mocked fetch |
-| BP-01, FEAT-01–03, FEAT-07, FEAT-09–11, FEAT-13–15, FEAT-17, AUTH-01/04/06/07, UI-*, PRIV-*, SEC-02/03/09, DB-01–05/08–09, STRESS-05 | Playwright |
-| SEC-06 | Client-bundle scan after `npm run build` |
-| STRESS-03/07, UI-05 | Manual — [TESTING_MANUAL.md](./TESTING_MANUAL.md) |
-| FEAT-16 (live), SEC-05 | Opt-in — `npm run test:live` (`playwright.live.config.ts`) |
+| Spec area | Automation | Notes / files |
+| --- | --- | --- |
+| INV-*, EDGE-01–05, EDGE-10–11, FEAT-08 (logic), UNIT-01–20, SEC-01/08–10 | Vitest unit | `lib/shopping/*.test.ts`, `lib/validation/schemas.test.ts`, `lib/generate/mapApiError.test.ts`, `lib/recipes/chat-log.test.ts`, `lib/images/*.test.ts`, `lib/ai/*.test.ts`, `lib/security/*.test.ts` |
+| FEAT-04/05/12 (API), INV-12–16, AUTH-02/03/05, BP-06–08, EDGE-06–08, SEC-04/07, STRESS-01/02/04/06, DB-07 | Vitest API (mock AI) | `app/api/generate/route.test.ts`, `app/api/generate/stress.test.ts`, `app/api/recipes/[id]/refine/route.test.ts` |
+| PRIV-* | Playwright | `e2e/privilege.spec.ts` (users A/B `storageState`) |
+| DB-01–05, DB-08–09 | Playwright | `e2e/database.spec.ts` — DB-04 skips without `SUPABASE_SERVICE_ROLE_KEY` |
+| STRESS-03 | Playwright | `e2e/stress-concurrent.spec.ts` — one slot left, two parallel POSTs |
+| STRESS-05 | Playwright | `e2e/stress-shopping.spec.ts` — 50 seeded lines, toggle + export |
+| BP-01, FEAT-01–03, FEAT-07, FEAT-09–11, FEAT-13–15, FEAT-17, AUTH-01/04/06/07, UI-* (except UI-05), SEC-02/03/09 | Playwright | `e2e/happy-path.spec.ts`, `e2e/auth-gates.spec.ts`, `e2e/security-ui.spec.ts` |
+| SEC-06 | Script after build | `npm run build && npm run test:client-secrets` → `lib/security/client-bundle.test.ts` |
+| FEAT-16, SEC-05 | Opt-in live | `npm run test:live` → `e2e/live.spec.ts` + `playwright.live.config.ts` |
+| STRESS-07, UI-05 | Manual only | Procedures in [TESTING_MANUAL.md](./TESTING_MANUAL.md) |
 
-Exact file paths:
-
-| Area | Files |
-| --- | --- |
-| Unit | `lib/shopping/*.test.ts`, `lib/validation/schemas.test.ts`, `lib/generate/mapApiError.test.ts`, `lib/recipes/chat-log.test.ts`, `lib/images/*.test.ts`, `lib/ai/*.test.ts`, `lib/security/*.test.ts` |
-| API | `app/api/generate/route.test.ts`, `app/api/generate/stress.test.ts`, `app/api/recipes/[id]/refine/route.test.ts` |
-| E2E | `e2e/auth-gates.spec.ts`, `e2e/happy-path.spec.ts`, `e2e/privilege.spec.ts`, `e2e/security-ui.spec.ts`, `e2e/database.spec.ts`, `e2e/stress-shopping.spec.ts` |
-| Live (opt-in) | `e2e/live.spec.ts` + `playwright.live.config.ts` |
-| Manual | `docs/TESTING_MANUAL.md` (☐ rows only) |
+**Default commands:** `npm test` · `npm run test:e2e` · `npm run test:client-secrets` · `npm run test:live` (see §1).
 
 ---
 
