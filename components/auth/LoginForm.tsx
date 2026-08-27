@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,11 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +81,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex w-full flex-col gap-4">
+    <form
+      onSubmit={onSubmit}
+      method="post"
+      data-ready={ready ? "true" : "false"}
+      className="flex w-full flex-col gap-4"
+    >
       <TextField
         label="Email"
         name="email"
@@ -102,7 +112,7 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           {formError}
         </p>
       ) : null}
-      <Button type="submit" loading={loading} className="w-full">
+      <Button type="submit" loading={loading} className="w-full" disabled={!ready}>
         Log in
       </Button>
       <p className="text-center text-sm text-[var(--color-ink-muted)]">

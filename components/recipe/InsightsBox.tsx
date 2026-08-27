@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/Button";
+import { isHttpUrl } from "@/lib/security/isHttpUrl";
 import type { RecipeInsights } from "@/types/recipe";
 
 type InsightsBoxProps = {
@@ -12,15 +13,7 @@ type InsightsBoxProps = {
   retryLoading?: boolean;
 };
 
-function isHttpUrl(value: string | undefined) {
-  if (!value) return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+export { isHttpUrl };
 
 export function InsightsBox({
   insights,

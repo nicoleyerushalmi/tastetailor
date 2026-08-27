@@ -2,7 +2,14 @@ import Image from "next/image";
 import { GenerateTabs } from "@/components/generate/GenerateTabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 
-export default function GeneratePage() {
+type GeneratePageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+export default async function GeneratePage({ searchParams }: GeneratePageProps) {
+  const params = await searchParams;
+  const defaultTab = params.tab === "scratch" ? "scratch" : "adapt";
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 lg:py-12">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12">
@@ -12,7 +19,7 @@ export default function GeneratePage() {
             title="Generate"
             lede="Paste a recipe to adapt, or start from a dish name. Add a creator to follow their version when we can find it — sources show on the result."
           />
-          <GenerateTabs />
+          <GenerateTabs defaultTab={defaultTab} />
         </div>
 
         <aside className="relative hidden min-h-[28rem] overflow-hidden border border-[var(--color-border)] lg:block">
