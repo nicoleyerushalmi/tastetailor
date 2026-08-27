@@ -37,10 +37,17 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run dev` | Dev server |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest (unit / API tests; uses mock AI) |
-| `npm run test:e2e` | Playwright suite with `AI_PROVIDER=mock` (needs free port 3000) |
-| `npm run test:client-secrets` | SEC-06: scan `.next/static` for leaked API keys (run `npm run build` first) |
+| `npm test` | Vitest (unit / API tests; uses mock AI). Logged 503/429 stacks in stderr are expected failure-path coverage when the run ends `passed`. |
+| `npm run test:e2e` | Playwright mock suite (needs free port 3000). **First time / after Playwright upgrades:** `npx playwright install` |
+| `npm run test:client-secrets` | SEC-06: scan `.next/static` for leaked API keys (run `npm run build` first; on Windows PowerShell run the two commands on separate lines) |
 | `npm run test:live` | Opt-in live Gemini (+ Unsplash) smoke — **not CI**; needs `GEMINI_API_KEY` |
+
+### E2E setup (`npm run test:e2e`)
+
+1. `npm install` then **`npx playwright install`** (downloads Chromium; without this you get `Executable doesn't exist … chrome-headless-shell`).
+2. `.env.local` with Supabase URL + anon key; `AI_PROVIDER=mock` is fine (Playwright forces mock for the default suite).
+3. Two onboarded test users (defaults in `.env.local.example` / `E2E_*`).
+4. Free port 3000, then `npm run test:e2e`.
 
 ### Live smoke (`npm run test:live`)
 

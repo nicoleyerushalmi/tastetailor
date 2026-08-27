@@ -37,14 +37,37 @@ This document defines **what** we test and **how** we judge pass/fail. Automated
 
 ### How to run
 
+#### One-time setup
+
+```bash
+npm install
+npx playwright install
+copy .env.local.example .env.local
+```
+
+Fill Supabase URL + anon key in `.env.local`. Keep `AI_PROVIDER=mock` for the default suites. E2E expects two onboarded users (defaults: `test@test.com` / `testb@test.com`, or set `E2E_*`). Optional: `SUPABASE_SERVICE_ROLE_KEY` for DB-04.
+
+#### Commands
+
 ```bash
 npm test                 # Vitest unit/API (+ SEC-08/10; SEC-06 if .next/static exists)
-npm run test:e2e         # Playwright mock suite (AI_PROVIDER=mock via webServer)
-npm run build && npm run test:client-secrets   # SEC-06 client chunk scan
+npm run test:e2e         # Playwright mock suite (starts next with AI_PROVIDER=mock)
+npm run build            # then SEC-06:
+npm run test:client-secrets
 npm run test:live        # Opt-in Gemini/Unsplash smoke (FEAT-16, SEC-05); not CI
 ```
 
-Optional env: `E2E_EMAIL` / `E2E_PASSWORD` (and `_B` pair); `SUPABASE_SERVICE_ROLE_KEY` for DB-04 (create/delete throwaway auth user).
+**Windows PowerShell:** do not chain with `&&` on older PowerShell — run the two lines separately (`npm run build`, then `npm run test:client-secrets`), or use `;` if you want them on one line regardless of success.
+
+**`npm test` stderr:** red `UpstreamError` / Unsplash `429` / timeout stacks in the Vitest output are **expected**. Those cases assert failure handling; the suite is green when it prints `Tests … passed`. Real failures are only rows marked `FAIL` / a non-zero exit code.
+
+**`npm run test:e2e` prerequisites**
+
+| Need | Notes |
+| --- | --- |
+| Chromium for Playwright | `npx playwright install` (once per machine / after Playwright upgrades). Missing browser → `Executable doesn't exist … chrome-headless-shell`. |
+| Port **3000** free | Config starts `next dev` there. Or set `PW_REUSE_SERVER=1` only if an existing server already uses `AI_PROVIDER=mock`. |
+| `.env.local` + E2E users | Auth setup logs in User A/B; email confirmation should be off for those accounts. |
 
 **Live smoke** (`npm run test:live` → `playwright.live.config.ts`):
 
@@ -54,6 +77,7 @@ Optional env: `E2E_EMAIL` / `E2E_PASSWORD` (and `_B` pair); `SUPABASE_SERVICE_RO
 | `UNSPLASH_ACCESS_KEY` | Required for FEAT-16 only (otherwise that test skips) |
 | Port 3000 free | Or `PW_REUSE_SERVER=1` with an already-running Gemini `next dev` |
 | E2E user A | Same accounts as mock E2E |
+| Playwright browsers | Same `npx playwright install` as above |
 
 Do **not** run `test:live` in default CI — nondeterministic quota/latency.
 
