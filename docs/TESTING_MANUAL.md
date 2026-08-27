@@ -3,24 +3,24 @@
 Companion to [TESTING.md](./TESTING.md). Record pass/fail in course submission notes.
 Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `e2e/`.
 
-**Precondition:** migration `0004_recipe_images` applied; email confirmation disabled for E2E signup accounts.
+**Precondition:** migration `0004_recipe_images` applied; email confirmation disabled for E2E accounts.
+
+**Test accounts:** `test@test.com` (A) and `testb@test.com` (B) — override via `E2E_*` env vars.
 
 ---
 
-## Privilege (`PRIV-*`)
+## Privilege (`PRIV-*`) — automated in `e2e/privilege.spec.ts`
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| PRIV-01 | ☐ | User B cannot open A's recipe UUID |
-| PRIV-02 | ☐ | B cannot favorite/refine A's recipe |
-| PRIV-03 | ☐ | B cannot delete A's recipe |
-| PRIV-04 | ☐ | A's history shows only A's recipes |
-| PRIV-05 | ☐ | Shopping lists isolated |
-| PRIV-06 | ☐ | B cannot toggle/delete A's shopping row |
-| PRIV-07 | ☐ | A cannot update B's profile (SQL/RLS) |
-| PRIV-08 | ☐ | Covered by API unit test; spot-check DB `user_id` |
-
-Follow the procedure in TESTING.md §7.
+| PRIV-01 | ✅ auto | B → A's recipe UUID → not found |
+| PRIV-02 | ✅ auto | B refine 404; favorite update 0 rows |
+| PRIV-03 | ✅ auto | B delete 0 rows; A still sees recipe |
+| PRIV-04 | ✅ auto | B history excludes A's marker title |
+| PRIV-05 | ✅ auto | Shopping list loads under B |
+| PRIV-06 | ✅ auto | B cannot toggle/delete A's shopping row |
+| PRIV-07 | ✅ auto | B cannot update A's profile |
+| PRIV-08 | ✅ auto | API unit + generate stamps `user_id` |
 
 ---
 
@@ -28,46 +28,46 @@ Follow the procedure in TESTING.md §7.
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| DB-01 | ☐ | `mode` check constraint |
+| DB-01 | ☐ | `mode` check constraint (needs service-role SQL) |
 | DB-02 | ☐ | `servings_base` 1–24 |
 | DB-03 | ☐ | title length constraints |
 | DB-04 | ☐ | `handle_new_user` creates profile |
-| DB-05 | ☐ | shopping unique `(user_id, name, unit)` merge |
-| DB-06 | ☐ | chat_log cap (also UNIT-08) |
-| DB-07 | ☐ | image columns nullable |
+| DB-05 | ☐ | shopping unique merge (partial E2E via add-to-list) |
+| DB-06 | ✅ auto | UNIT-08 / STRESS-06 chat_log cap |
+| DB-07 | ✅ auto | generate with null images (API) |
 | DB-08 | ☐ | `0004_recipe_images` columns exist |
-| DB-09 | ☐ | delete strips `source_recipe_ids` (migration 0002) |
+| DB-09 | ☐ | delete strips `source_recipe_ids` |
 
 ---
 
-## Stress (`STRESS-*`)
+## Stress (`STRESS-*`) — mostly automated in `app/api/generate/stress.test.ts`
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| STRESS-01 | ☐ | After `GENERATIONS_PER_DAY` claims → 429 |
-| STRESS-02 | ☐ | Rapid sequential generates under cap |
-| STRESS-03 | ☐ | Two tabs near limit — no corrupt rows |
-| STRESS-04 | ☐ | ~20k adapt paste accepted; over max → 400 |
-| STRESS-05 | ☐ | 50 shopping lines usable |
-| STRESS-06 | ☐ | Many refines; chat_log trimmed; refine still works |
-| STRESS-07 | ☐ | Live Gemini 503 → retries / `ai_unavailable` + refund |
+| STRESS-01 | ✅ auto | 429 when slot claim false |
+| STRESS-02 | ✅ auto | 5 sequential generates → 201 |
+| STRESS-03 | ☐ | Two tabs near limit (needs counter reset) |
+| STRESS-04 | ✅ auto | 20k ok / 20_001 → 400 |
+| STRESS-05 | ☐ | 50 shopping lines UI |
+| STRESS-06 | ✅ auto | chat_log trim to cap |
+| STRESS-07 | ☐ | Live Gemini 503 (UNIT covers mock retries) |
 
 ---
 
-## Security live probes (`SEC-*`)
+## Security (`SEC-*`)
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| SEC-02 | ☐ | Source links have `noopener noreferrer` |
-| SEC-03 | ☐ | Seed hostile `<script>` title — escaped |
-| SEC-04 | ☐ | Live adapt paste injection — no system prompt leak |
-| SEC-05 | ☐ | Jailbreak persona_query |
-| SEC-06 | ☐ | `npm run build` then grep client chunks for keys |
-| SEC-08 | ☐ | `.env*` ignored except examples |
-| SEC-09 | ☐ | Non-Unsplash `image_url` does not load via next/image |
-| SEC-10 | ☐ | No client import of `lib/ai/*` / `lib/images/*` |
-
-Automated: SEC-01, SEC-07, SEC-09 (config) in Vitest.
+| SEC-01 | ✅ auto | Vitest `isHttpUrl` |
+| SEC-02 | ✅ auto | `e2e/security-ui.spec.ts` |
+| SEC-03 | ✅ auto | Seeded `<script>` title escaped |
+| SEC-04 | ✅ auto | Mock adapt injection (API) |
+| SEC-05 | ☐ | Live jailbreak persona (optional) |
+| SEC-06 | ☐ | Build chunk key scan (optional CI) |
+| SEC-07 | ✅ auto | API error shape |
+| SEC-08 | ✅ auto | gitignore hygiene |
+| SEC-09 | ✅ auto | Config unit + E2E no fetch to bad host |
+| SEC-10 | ✅ auto | Client import boundary |
 
 ---
 
@@ -75,23 +75,19 @@ Automated: SEC-01, SEC-07, SEC-09 (config) in Vitest.
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| FEAT-16 | ☐ | With key + migration, `image_url` may be set |
-| UI-02 | ☐ | Auth split layout desktop/mobile |
-| UI-05 | ☐ | History skeleton on slow network |
-| UI-09 | ☐ | Photo credit link when image set |
-| UI-12 | ☐ | `ai_unavailable` copy on busy refine |
+| FEAT-16 | ☐ | Live Unsplash attach (optional) |
+| UI-02 | ✅ auto | Auth form desktop + mobile |
+| UI-05 | ☐ | History skeleton (brittle) |
+| UI-09 | ✅ auto | Seeded photo credit |
+| UI-10 | ✅ auto | Mobile nav drawer |
+| UI-12 | ✅ auto | `ai_unavailable` via route mock |
 
 ---
 
-## Authenticated Playwright journeys
-
-Uses `E2E_EMAIL` / `E2E_PASSWORD` (defaults: `test@test.com` / `test12345678`).
-Session state is written to `e2e/.auth/` (gitignored). Playwright starts its own
-`next dev` on port 3000 with `AI_PROVIDER=mock` — stop any existing server on that
-port first, or set `PW_REUSE_SERVER=1` only if that server is already on mock.
+## Run automation
 
 ```bash
+npm test
+# Free port 3000 (or set PW_REUSE_SERVER=1 only if already AI_PROVIDER=mock)
 npm run test:e2e
 ```
-
-Covered in automation: FEAT-02, FEAT-07–09, FEAT-11, FEAT-14–15, FEAT-17, UI-03/04/06, AUTH-07, BP-01 (partial).

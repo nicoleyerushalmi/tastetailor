@@ -35,7 +35,17 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       testMatch: /.*\.spec\.ts/,
-      testIgnore: /auth-gates\.spec\.ts/,
+      testIgnore: /auth-gates\.spec\.ts|privilege\.spec\.ts/,
+    },
+    {
+      name: "privilege",
+      dependencies: ["setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        // Default context is user B; tests create an extra A context when needed.
+        storageState: "e2e/.auth/user-b.json",
+      },
+      testMatch: /privilege\.spec\.ts/,
     },
   ],
   webServer: {

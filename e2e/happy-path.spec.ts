@@ -1,5 +1,6 @@
 import { test, expect } from "playwright/test";
 import { createScratchRecipe, generateScratchRecipe } from "./helpers";
+import { AUTH_FILE_A, E2E_EMAIL, E2E_PASSWORD } from "./env";
 
 test.describe("authenticated happy path (BP-01)", () => {
   test("login lands on generate when onboarded (FEAT-02)", async ({ page }) => {
@@ -81,7 +82,11 @@ test.describe("history filters (FEAT-14, UI-04)", () => {
 });
 
 test.describe("auth session (AUTH-07)", () => {
-  test("sign out clears session", async ({ page }) => {
+  test("sign out clears session", async ({ browser }) => {
+    // Isolated context so signing out does not kill the shared storage token
+    // until we refresh the auth file for later projects (privilege).
+    const context = await browser.newContext({ storageState: AUTH_FILE_A });
+    const page = await context.newPage();
     await page.goto("/generate", { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: "Generate" })).toBeVisible();
 
@@ -89,5 +94,20 @@ test.describe("auth session (AUTH-07)", () => {
     await expect(page).toHaveURL(/\/login/, { timeout: 20_000 });
     await page.goto("/generate");
     await expect(page).toHaveURL(/\/login/);
+    await context.close();
+
+    // Re-login and rewrite storage — Sign out revokes the refresh token.
+    const refresh = await browser.newContext();
+    const refreshPage = await refresh.newPage();
+    await refreshPage.goto("/login", { waitUntil: "domcontentloaded" });
+    await expect(refreshPage.locator('form[data-ready="true"]')).toBeVisible({
+      timeout: 30_000,
+    });
+    await refreshPage.locator('input[name="email"]').fill(E2E_EMAIL);
+    await refreshPage.locator('input[name="password"]').fill(E2E_PASSWORD);
+    await refreshPage.getByRole("button", { name: "Log in" }).click();
+    await refreshPage.waitForURL(/\/generate/, { timeout: 45_000 });
+    await refresh.storageState({ path: AUTH_FILE_A });
+    await refresh.close();
   });
 });

@@ -34,7 +34,7 @@ describe("secret hygiene (SEC-08)", () => {
 });
 
 describe("server-only import boundary (SEC-10)", () => {
-  it('no "use client" file imports lib/ai or lib/images', () => {
+  it('no "use client" file imports server AI/Unsplash modules', () => {
     const clients = walk(root, (name) => /\.(tsx?|jsx?)$/.test(name)).filter(
       (file) => {
         const src = readFileSync(file, "utf8");
@@ -47,7 +47,7 @@ describe("server-only import boundary (SEC-10)", () => {
       const src = readFileSync(file, "utf8");
       if (
         /from\s+["']@\/lib\/ai(\/|["'])/.test(src) ||
-        /from\s+["']@\/lib\/images(\/|["'])/.test(src)
+        /from\s+["']@\/lib\/images\/unsplash["']/.test(src)
       ) {
         offenders.push(path.relative(root, file));
       }

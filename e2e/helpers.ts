@@ -1,10 +1,27 @@
 import { expect, type APIRequestContext, type Page } from "playwright/test";
+import { AUTH_FILE_A, clientFromStorageState, userIdFromStorageState } from "./env";
+
+/** Reset the daily generation counter so E2E can keep creating recipes. */
+export async function resetGenerationBudget(storagePath: string = AUTH_FILE_A) {
+  const supabase = await clientFromStorageState(storagePath);
+  const userId = await userIdFromStorageState(storagePath);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ daily_generation_count: 0 })
+    .eq("id", userId);
+  if (error) {
+    throw new Error(`resetGenerationBudget failed: ${error.message}`);
+  }
+}
 
 /** Create a scratch recipe through the API (uses storage-state cookies). */
 export async function createScratchRecipe(
   request: APIRequestContext,
   dishName: string,
+  options?: { storagePath?: string },
 ) {
+  await resetGenerationBudget(options?.storagePath ?? AUTH_FILE_A);
+
   const response = await request.post("/api/generate", {
     data: {
       mode: "scratch",

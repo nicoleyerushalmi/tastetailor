@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { safeRecipeImageSrc } from "@/lib/images/safeRecipeImage";
 import type { RecipeSummary } from "@/types/recipe";
 
 type RecipeCardProps = RecipeSummary & {
@@ -23,8 +24,9 @@ export function RecipeCard({
     day: "numeric",
   });
 
-  const src = image_url?.trim() || "/images/recipe-ambient.jpg";
+  const src = safeRecipeImageSrc(image_url);
   const alt = image_alt?.trim() || "";
+  const usingRemote = src.startsWith("http");
 
   return (
     <Link
@@ -37,7 +39,7 @@ export function RecipeCard({
           alt={alt}
           fill
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
-          style={image_url ? undefined : { objectPosition: imagePosition }}
+          style={usingRemote ? undefined : { objectPosition: imagePosition }}
           sizes="(max-width: 640px) 100vw, 33vw"
         />
         <div className="absolute inset-0 bg-[var(--color-ink)]/15" />

@@ -13,6 +13,7 @@ import { ServingScaler } from "@/components/recipe/ServingScaler";
 import { StepList } from "@/components/recipe/StepList";
 import { Toast } from "@/components/ui/Toast";
 import { mapApiError } from "@/lib/generate/mapApiError";
+import { safeRecipeImageSrc } from "@/lib/images/safeRecipeImage";
 import type { ChatLogEntry, Ingredient, RecipeInsights } from "@/types/recipe";
 
 export type RecipeDetailClientProps = {
@@ -151,7 +152,7 @@ export function RecipeDetailClient({
       <div className="flex flex-col gap-2">
         <div className="relative h-40 overflow-hidden border border-[var(--color-border)] sm:h-52">
           <Image
-            src={imageUrl?.trim() || "/images/recipe-ambient.jpg"}
+            src={safeRecipeImageSrc(imageUrl)}
             alt={imageAlt?.trim() || ""}
             fill
             className="object-cover"
@@ -160,7 +161,9 @@ export function RecipeDetailClient({
           />
           <div className="absolute inset-0 bg-[var(--color-ink)]/20" />
         </div>
-        {imageUrl && imageCreditName ? (
+        {imageUrl &&
+        safeRecipeImageSrc(imageUrl).startsWith("http") &&
+        imageCreditName ? (
           <p className="text-xs text-[var(--color-ink-muted)]">
             Photo by{" "}
             {imageCreditUrl ? (
