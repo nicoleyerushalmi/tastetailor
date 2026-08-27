@@ -37,7 +37,21 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run dev` | Dev server |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest (unit tests) |
+| `npm test` | Vitest (unit / API tests; uses mock AI) |
+| `npm run test:e2e` | Playwright suite with `AI_PROVIDER=mock` (needs free port 3000) |
+| `npm run test:client-secrets` | SEC-06: scan `.next/static` for leaked API keys (run `npm run build` first) |
+| `npm run test:live` | Opt-in live Gemini (+ Unsplash) smoke — **not CI**; needs `GEMINI_API_KEY` |
+
+### Live smoke (`npm run test:live`)
+
+Runs FEAT-16 (Unsplash attach) and SEC-05 (jailbreak persona) against real Gemini. Config: `playwright.live.config.ts` (forces `AI_PROVIDER=gemini`).
+
+1. Put `GEMINI_API_KEY` in `.env.local` (and `UNSPLASH_ACCESS_KEY` for FEAT-16).
+2. Free port 3000 (or set `PW_REUSE_SERVER=1` only if a Gemini-backed `next dev` is already up).
+3. Use the same E2E accounts as the mock suite (`E2E_EMAIL` / `E2E_PASSWORD`, defaults in `.env.local.example`).
+4. Run: `npm run test:live`
+
+Skipped automatically when `GEMINI_API_KEY` is missing; FEAT-16 alone skips when Unsplash is unset. See [docs/TESTING.md](./docs/TESTING.md) and [docs/TESTING_MANUAL.md](./docs/TESTING_MANUAL.md).
 
 ## Deploy
 

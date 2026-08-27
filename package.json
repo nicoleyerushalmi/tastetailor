@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:live": "playwright test -c playwright.live.config.ts",
     "test:client-secrets": "vitest run lib/security/client-bundle.test.ts"
   },
   "dependencies": {

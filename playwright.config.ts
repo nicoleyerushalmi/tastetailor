@@ -35,7 +35,7 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       testMatch: /.*\.spec\.ts/,
-      testIgnore: /auth-gates\.spec\.ts|privilege\.spec\.ts/,
+      testIgnore: /auth-gates\.spec\.ts|privilege\.spec\.ts|live\.spec\.ts/,
     },
     {
       name: "privilege",

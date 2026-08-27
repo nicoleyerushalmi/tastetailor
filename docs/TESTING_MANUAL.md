@@ -3,13 +3,14 @@
 Companion to [TESTING.md](./TESTING.md). Most IDs are automated; only rows marked ☐ need a human pass/fail for course submission notes.
 Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `e2e/`.
 
-**Still manual:** STRESS-03, STRESS-05, STRESS-07, SEC-05, FEAT-16, UI-05.
+**Still manual:** STRESS-03, STRESS-07, SEC-05 (optional live), FEAT-16 (optional live), UI-05.
 
 **Precondition:** migration `0004_recipe_images` applied; email confirmation disabled for E2E accounts.
 
 **Test accounts:** `test@test.com` (A) and `testb@test.com` (B) — override via `E2E_*` env vars.
 
 **Optional:** `SUPABASE_SERVICE_ROLE_KEY` enables DB-04 (otherwise skipped).
+**Optional live:** `npm run test:live` (Gemini + Unsplash; not in default CI).
 
 ---
 
@@ -52,7 +53,7 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 | STRESS-02 | ✅ auto | 5 sequential generates → 201 |
 | STRESS-03 | ☐ | Two tabs near limit (needs counter reset) |
 | STRESS-04 | ✅ auto | 20k ok / 20_001 → 400 |
-| STRESS-05 | ☐ | 50 shopping lines UI |
+| STRESS-05 | ✅ auto | `e2e/stress-shopping.spec.ts` — 50 seeded lines |
 | STRESS-06 | ✅ auto | chat_log trim to cap |
 | STRESS-07 | ☐ | Live Gemini 503 (UNIT covers mock retries) |
 
@@ -66,7 +67,7 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 | SEC-02 | ✅ auto | `e2e/security-ui.spec.ts` |
 | SEC-03 | ✅ auto | Seeded `<script>` title escaped |
 | SEC-04 | ✅ auto | Mock adapt injection (API) |
-| SEC-05 | ☐ | Live jailbreak persona (optional) |
+| SEC-05 | ☐ live | `npm run test:live` (Gemini); still optional for course notes |
 | SEC-06 | ✅ auto | `lib/security/client-bundle.test.ts` (needs `npm run build` first) |
 | SEC-07 | ✅ auto | API error shape |
 | SEC-08 | ✅ auto | gitignore hygiene |
@@ -79,7 +80,7 @@ Automated coverage lives under `lib/**/*.test.ts`, `app/api/**/*.test.ts`, and `
 
 | ID | Result | Notes |
 | --- | --- | --- |
-| FEAT-16 | ☐ | Live Unsplash attach (optional) |
+| FEAT-16 | ☐ live | `npm run test:live` when `UNSPLASH_ACCESS_KEY` set |
 | UI-02 | ✅ auto | Auth form desktop + mobile |
 | UI-05 | ☐ | History skeleton (brittle) |
 | UI-09 | ✅ auto | Seeded photo credit |
@@ -97,4 +98,15 @@ npm run test:e2e
 # After a production build, scan client chunks for leaked API keys:
 npm run build
 npm run test:client-secrets
+```
+
+### Live smoke (opt-in, not CI)
+
+Covers **FEAT-16** and **SEC-05** with real Gemini (+ Unsplash when keyed).
+
+```bash
+# Requires GEMINI_API_KEY in .env.local
+# UNSPLASH_ACCESS_KEY required for FEAT-16 (otherwise that case skips)
+# Free port 3000 — playwright.live.config.ts starts next with AI_PROVIDER=gemini
+npm run test:live
 ```
