@@ -11,7 +11,7 @@ export function SiteHeader({ variant = "light" }: SiteHeaderProps) {
     <header className="relative z-20 flex items-center justify-between px-6 py-5 md:px-10">
       <Link
         href="/"
-        className={`font-display text-2xl font-bold tracking-tight ${
+        className={`font-logo text-2xl font-bold tracking-tight ${
           onPhoto ? "text-white" : "text-[var(--color-ink)]"
         }`}
       >

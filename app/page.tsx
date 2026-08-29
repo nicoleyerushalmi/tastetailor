@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Section } from "@/components/layout/Section";
 
@@ -31,7 +30,7 @@ export default function HomePage() {
         <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-10 text-center md:px-10">
           <div className="flex max-w-3xl flex-col items-center">
             <motion.h1
-              className="font-display text-[clamp(3.5rem,10vw,7rem)] font-extrabold leading-[0.92] tracking-tight text-white"
+              className="font-logo text-[clamp(3.5rem,10vw,7rem)] font-extrabold leading-[0.92] tracking-tight text-white"
               {...fadeUp(0)}
             >
               TasteTailor
@@ -150,28 +149,6 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
-
-      {/* Closing CTA */}
-      <Section className="bg-[var(--color-ink)]" contained={false}>
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-6 px-6 md:flex-row md:items-center md:justify-between md:px-10">
-          <div>
-            <h2 className="font-display text-3xl font-bold tracking-tight text-white md:text-4xl">
-              Fit your next recipe.
-            </h2>
-            <p className="mt-2 text-white/70">
-              Create an account and tell us how you eat — once.
-            </p>
-          </div>
-          <Link
-            href="/signup"
-            className="inline-flex h-12 shrink-0 items-center rounded-[var(--radius-control)] bg-[var(--color-accent)] px-6 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]"
-          >
-            Get started
-          </Link>
-        </div>
-      </Section>
-
-      <SiteFooter />
     </div>
   );
 }

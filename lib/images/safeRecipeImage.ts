@@ -4,7 +4,9 @@ const AMBIENT = "/images/recipe-ambient.jpg";
 export function safeRecipeImageSrc(imageUrl: string | null | undefined): string {
   const trimmed = imageUrl?.trim();
   if (!trimmed) return AMBIENT;
-  if (trimmed.startsWith("/")) return trimmed;
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\")) {
+    return trimmed;
+  }
   try {
     const url = new URL(trimmed);
     if (url.protocol === "https:" && url.hostname === "images.unsplash.com") {

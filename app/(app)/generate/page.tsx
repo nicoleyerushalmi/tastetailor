@@ -31,8 +31,8 @@ export default async function GeneratePage({ searchParams }: GeneratePageProps) 
             className="object-cover"
             sizes="40vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/80 via-[var(--color-ink)]/25 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 z-10 space-y-4 p-6 text-white">
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ink)]/60 via-[var(--color-ink)]/10 to-transparent" />
+          <div className="absolute inset-x-6 bottom-6 z-10 space-y-4 rounded-2xl border border-white/25 bg-white/15 p-6 text-white shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-md">
             <p className="font-display text-xl font-semibold">Tips</p>
             <ul className="space-y-3 text-sm text-white/85">
               <li>

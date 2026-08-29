@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #e7e9e2;
+  --background: #f9f6f0;
   --foreground: #141814;
   --color-ink: #141814;
   --color-ink-muted: #5a635a;
-  --color-accent: #d97706;
-  --color-accent-hover: #b45309;
+  --color-accent: #c84c09;
+  --color-accent-hover: #a43e07;
   --color-accent-soft: #fde7c3;
   --color-border: #c9cfc2;
   --color-surface: #f4f5f0;
@@ -14,6 +14,12 @@
   --radius-control: 6px;
   --shadow-soft: 0 12px 40px rgba(20, 24, 20, 0.08);
   --space-section: clamp(4.5rem, 8vw, 7rem);
+
+  /* Input fields & textareas — warmer, softer surface than --color-surface */
+  --color-input-bg: #ffffff;
+  --color-input-border: #e7ded0;
+  --radius-input: 16px;
+  --shadow-input: 0 2px 8px rgba(120, 72, 33, 0.06);
 }
 
 @theme inline {
@@ -31,6 +37,10 @@ body {
 
 .font-display {
   font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.font-logo {
+  font-family: var(--font-logo), Georgia, serif;
 }
 
 .photo-veil {

@@ -19,8 +19,8 @@ export function TextField({
       <span className="font-medium text-[var(--color-ink)]">{label}</span>
       <input
         id={fieldId}
-        className={`h-11 rounded-[var(--radius-control)] border bg-[var(--color-surface)] px-3 text-[var(--color-ink)] outline-none transition placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 ${
-          error ? "border-[var(--color-danger)]" : "border-[var(--color-border)]"
+        className={`h-11 rounded-[var(--radius-input)] border bg-[var(--color-input-bg)] px-3 text-[var(--color-ink)] shadow-[var(--shadow-input)] outline-none transition placeholder:text-[var(--color-ink-muted)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/25 ${
+          error ? "border-[var(--color-danger)]" : "border-[var(--color-input-border)]"
         } ${className}`}
         {...props}
       />

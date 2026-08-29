@@ -169,6 +169,9 @@ async function callGemini(args: {
 
   // High-demand 503s are usually brief — retry the same request a few times.
   const maxAttempts = 3;
+  // Bounds a single call so a stuck/slow response can't hang the request
+  // indefinitely — without this, a single combo could wait forever.
+  const requestTimeoutMs = 25_000;
   let lastNetworkError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -177,6 +180,7 @@ async function callGemini(args: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(requestTimeoutMs),
       });
 
       if (
@@ -254,7 +258,7 @@ export function createGeminiProvider(): RecipeProvider {
       // fails outright, so an unresolved persona never turns into a 500.
       let personaUnknownResult: unknown;
 
-      for (const useSearch of searchAttempts) {
+      combos: for (const useSearch of searchAttempts) {
         for (const thinkingBudget of thinkingAttempts) {
           const response = await callGemini({
             apiKey,

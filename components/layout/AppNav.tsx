@@ -70,7 +70,7 @@ export function AppNav() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Link
             href="/generate"
-            className="font-display text-xl font-bold tracking-tight text-[var(--color-ink)]"
+            className="font-logo text-xl font-bold tracking-tight text-[var(--color-ink)]"
           >
             TasteTailor
           </Link>

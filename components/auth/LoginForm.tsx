@@ -12,6 +12,13 @@ type LoginFormProps = {
   redirectTo?: string;
 };
 
+function safeRedirectPath(redirectTo: string | undefined): string | null {
+  if (!redirectTo) return null;
+  if (!redirectTo.startsWith("/")) return null;
+  if (redirectTo.startsWith("//") || redirectTo.startsWith("/\\")) return null;
+  return redirectTo;
+}
+
 export function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -51,9 +58,10 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
       return;
     }
 
-    if (redirectTo) {
+    const safeRedirectTo = safeRedirectPath(redirectTo);
+    if (safeRedirectTo) {
       setLoading(false);
-      router.push(redirectTo);
+      router.push(safeRedirectTo);
       router.refresh();
       return;
     }
