@@ -1,7 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
@@ -26,10 +26,9 @@ export function Button({
   type = "button",
   ...props
 }: ButtonProps) {
-  const reduceMotion = useReducedMotion();
   const classNames = `inline-flex h-11 items-center justify-center rounded-[var(--radius-control)] px-5 text-sm font-medium transition disabled:cursor-not-allowed ${variants[variant]} ${className}`;
 
-  if (loading && !reduceMotion) {
+  if (loading) {
     return (
       <motion.button
         type={type}

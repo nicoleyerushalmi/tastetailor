@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 const MESSAGES = [
   "Fitting this recipe to how you eat…",
@@ -16,7 +16,6 @@ type GeneratingOverlayProps = {
 };
 
 export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
-  const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
       {open ? (
         <motion.div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--color-ink)]/55 px-6 backdrop-blur-sm"
-          initial={reduceMotion ? false : { opacity: 0 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           role="alertdialog"
@@ -49,9 +48,9 @@ export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
         >
           <motion.div
             className="w-full max-w-md border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-10 text-center shadow-[var(--shadow-soft)]"
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduceMotion ? undefined : { opacity: 0, y: 8 }}
+            exit={{ opacity: 0, y: 8 }}
           >
             <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)]" />
             <p className="font-display text-xl font-semibold text-[var(--color-ink)]">

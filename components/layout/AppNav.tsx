@@ -13,7 +13,7 @@ import {
   History,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_ITEMS = [
@@ -27,7 +27,6 @@ const NAV_ITEMS = [
 export function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
   const [signingOut, setSigningOut] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -124,16 +123,16 @@ export function AppNav() {
               type="button"
               aria-label="Close menu"
               className="fixed inset-0 z-40 bg-[var(--color-ink)]/40 md:hidden"
-              initial={reduceMotion ? false : { opacity: 0 }}
+              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
             />
             <motion.aside
               className="fixed inset-y-0 right-0 z-50 flex w-[min(20rem,88vw)] flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] md:hidden"
-              initial={reduceMotion ? false : { x: "100%" }}
+              initial={{ x: "100%" }}
               animate={{ x: 0 }}
-              exit={reduceMotion ? undefined : { x: "100%" }}
+              exit={{ x: "100%" }}
               transition={{ type: "tween", duration: 0.25 }}
             >
               <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-4">

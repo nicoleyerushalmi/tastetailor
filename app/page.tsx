@@ -2,22 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Section } from "@/components/layout/Section";
 
 export default function HomePage() {
-  const reduceMotion = useReducedMotion();
-
-  const fadeUp = (delay: number) =>
-    reduceMotion
-      ? { initial: false as const }
-      : {
-          initial: { opacity: 0, y: 18 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.45, delay, ease: "easeOut" as const },
-        };
+  const fadeUp = (delay: number) => ({
+    initial: { opacity: 0, y: 18 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.45, delay, ease: "easeOut" as const },
+  });
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-[var(--background)]">
@@ -33,8 +28,8 @@ export default function HomePage() {
         />
         <div className="photo-veil absolute inset-0" aria-hidden />
         <SiteHeader variant="on-photo" />
-        <main className="relative z-10 flex flex-1 flex-col justify-center px-6 pb-24 pt-10 md:px-10">
-          <div className="max-w-3xl">
+        <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-10 text-center md:px-10">
+          <div className="flex max-w-3xl flex-col items-center">
             <motion.h1
               className="font-display text-[clamp(3.5rem,10vw,7rem)] font-extrabold leading-[0.92] tracking-tight text-white"
               {...fadeUp(0)}
@@ -47,16 +42,19 @@ export default function HomePage() {
             >
               Recipes fitted to how you eat.
             </motion.p>
-            <motion.div className="mt-10 flex flex-wrap gap-3" {...fadeUp(0.2)}>
+            <motion.div
+              className="mt-10 flex flex-wrap justify-center gap-4"
+              {...fadeUp(0.2)}
+            >
               <Link
                 href="/signup"
-                className="inline-flex h-12 items-center rounded-[var(--radius-control)] bg-[var(--color-accent)] px-6 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]"
+                className="inline-flex h-16 items-center rounded-[var(--radius-control)] bg-[var(--color-accent)] px-8 text-lg font-bold text-white transition hover:bg-[var(--color-accent-hover)]"
               >
                 Get started
               </Link>
               <Link
                 href="/login"
-                className="inline-flex h-12 items-center rounded-[var(--radius-control)] border border-white/40 bg-transparent px-6 text-sm font-medium text-white transition hover:border-white hover:bg-white/10"
+                className="inline-flex h-16 items-center rounded-[var(--radius-control)] border-2 border-white/60 bg-transparent px-8 text-lg font-bold text-white transition hover:border-white hover:bg-white/10"
               >
                 Log in
               </Link>

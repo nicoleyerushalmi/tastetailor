@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { isHttpUrl } from "@/lib/security/isHttpUrl";
 import type { RecipeInsights } from "@/types/recipe";
@@ -23,12 +23,11 @@ export function InsightsBox({
   retryLoading,
 }: InsightsBoxProps) {
   const sources = insights.sources ?? [];
-  const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
       className="flex flex-col gap-5"
-      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >

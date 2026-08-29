@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { AddToShoppingListButton } from "@/components/recipe/AddToShoppingListButton";
 import { CookModeView } from "@/components/recipe/CookModeView";
 import { IngredientList } from "@/components/recipe/IngredientList";
@@ -61,7 +61,6 @@ export function RecipeDetailClient({
   imageCreditName,
   imageCreditUrl,
 }: RecipeDetailClientProps) {
-  const reduceMotion = useReducedMotion();
   const [recipe, setRecipe] = useState<RecipeState>({
     title,
     servingsBase,
@@ -134,7 +133,7 @@ export function RecipeDetailClient({
       ) : null}
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:py-12">
       <motion.div
-        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
@@ -193,7 +192,7 @@ export function RecipeDetailClient({
 
       <motion.div
         className="grid gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-12"
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.05, ease: "easeOut" }}
       >

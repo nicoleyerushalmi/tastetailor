@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Syne } from "next/font/google";
+import { MotionConfig } from "motion/react";
 import "./globals.css";
 
 const display = Syne({
@@ -31,7 +32,7 @@ export default function RootLayout({
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-[family-name:var(--font-body)]">
-        {children}
+        <MotionConfig reducedMotion="user">{children}</MotionConfig>
       </body>
     </html>
   );
