@@ -302,10 +302,13 @@ export function createGeminiProvider(): RecipeProvider {
             const merged = mergeSources(parsed, fromSearch);
 
             if (wantsCreator && looksPersonaUnknown(parsed)) {
-              // Valid recipe, but the model gave up on the persona — try the
-              // remaining search/thinking combos before accepting that.
+              // Valid recipe, but the model gave up on the persona. The first
+              // combo already used the strongest settings (search + deep
+              // thinking when a creator is named), so weaker combos are
+              // unlikely to do better — go straight to the one dedicated,
+              // maximally-directed retry below instead of exhausting the rest.
               personaUnknownResult = merged;
-              continue;
+              break combos;
             }
 
             return merged;
