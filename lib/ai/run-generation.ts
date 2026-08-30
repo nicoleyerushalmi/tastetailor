@@ -124,11 +124,17 @@ export function outcomeToErrorResponse(
 ): NextResponse | null {
   switch (outcome.kind) {
     case "upstream_error": {
+      const message = outcome.message ?? "";
+      const timedOut =
+        /aborted due to timeout/i.test(message) ||
+        /the operation was aborted/i.test(message);
       const busy =
+        timedOut ||
         outcome.status === 429 ||
         outcome.status === 502 ||
         outcome.status === 503 ||
-        outcome.status === 504;
+        outcome.status === 504 ||
+        outcome.status === undefined;
       if (busy) {
         return NextResponse.json(
           {

@@ -54,7 +54,6 @@ describe("Gemini transient retry (UNIT-10–12)", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(503, { error: { message: "busy" } }))
-      .mockResolvedValueOnce(jsonResponse(503, { error: { message: "busy" } }))
       .mockResolvedValue(jsonResponse(200, validGeminiBody));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -67,7 +66,7 @@ describe("Gemini transient retry (UNIT-10–12)", () => {
     await vi.runAllTimersAsync();
     const result = await promise;
 
-    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(result).toMatchObject({ title: "Retry Bowl", refused: false });
   });
 
@@ -119,5 +118,32 @@ describe("Gemini transient retry (UNIT-10–12)", () => {
 
     expect(caught).toBeInstanceOf(UpstreamError);
     expect((caught as UpstreamError).status).toBe(503);
+  });
+
+  it("fails over to a lighter combo after timeouts on the heavy combo", async () => {
+    const timeout = Object.assign(new Error("The operation was aborted due to timeout"), {
+      name: "TimeoutError",
+    });
+    const fetchMock = vi
+      .fn()
+      // Creator path starts with search=true + thinking=0 — time out twice.
+      .mockRejectedValueOnce(timeout)
+      .mockRejectedValueOnce(timeout)
+      // Next combo (search=true, deep thinking) succeeds.
+      .mockResolvedValue(jsonResponse(200, validGeminiBody));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { createGeminiProvider } = await import("@/lib/ai/gemini");
+    const provider = createGeminiProvider();
+    const promise = provider.generate({
+      systemPrompt: "sys",
+      userPrompt:
+        "MODE: scratch\npersona_query: Some Creator\ndish_name: soup",
+    });
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(result).toMatchObject({ title: "Retry Bowl", refused: false });
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 });

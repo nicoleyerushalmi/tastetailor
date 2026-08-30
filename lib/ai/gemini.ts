@@ -132,6 +132,16 @@ function isTransientGeminiStatus(status: number) {
   return status === 429 || status === 502 || status === 503 || status === 504;
 }
 
+function isAbortTimeout(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === "TimeoutError" ||
+    error.name === "AbortError" ||
+    /aborted due to timeout/i.test(error.message) ||
+    /the operation was aborted/i.test(error.message)
+  );
+}
+
 async function callGemini(args: {
   apiKey: string;
   model: string;
@@ -173,12 +183,13 @@ async function callGemini(args: {
     body.tools = [{ google_search: {} }];
   }
 
-  // High-demand 503s are usually brief — retry the same request a few times.
-  const maxAttempts = 3;
-  // Bounds a single call so a stuck/slow response can't hang the request
-  // indefinitely — without this, a single combo could wait forever.
-  const requestTimeoutMs = 25_000;
+  // Brief retries on transient HTTP; avoid long hangs when the model is down.
+  const maxAttempts = 2;
+  const requestTimeoutMs =
+    useSearch || thinkingBudget > 0 ? 30_000 : 15_000;
   let lastNetworkError: unknown;
+  let timeoutAttempts = 0;
+  let sawTransientHttp = false;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const started = Date.now();
@@ -201,6 +212,10 @@ async function callGemini(args: {
         repair: Boolean(input.repairOf),
       });
 
+      if (isTransientGeminiStatus(response.status)) {
+        sawTransientHttp = true;
+      }
+
       if (
         response.ok ||
         !isTransientGeminiStatus(response.status) ||
@@ -209,10 +224,12 @@ async function callGemini(args: {
         return response;
       }
 
-      await sleep(600 * 2 ** attempt);
+      await sleep(400 * 2 ** attempt);
     } catch (error) {
       bumpGeminiHttpCall();
       lastNetworkError = error;
+      const timedOut = isAbortTimeout(error);
+      if (timedOut) timeoutAttempts += 1;
       aiLog.debug("gemini", {
         phase: "attempt_network_error",
         model,
@@ -225,12 +242,17 @@ async function callGemini(args: {
             ? truncateUpstreamBody(error.message, 200)
             : "network_error",
       });
-      if (attempt === maxAttempts - 1) {
+      // If Gemini already answered 503 once, don't burn another full timeout.
+      const giveUp =
+        attempt === maxAttempts - 1 ||
+        (timedOut && (timeoutAttempts >= 2 || sawTransientHttp));
+      if (giveUp) {
         throw new UpstreamError(
           error instanceof Error ? error.message : "Gemini network error",
+          503,
         );
       }
-      await sleep(600 * 2 ** attempt);
+      await sleep(400 * 2 ** attempt);
     }
   }
 
@@ -238,6 +260,7 @@ async function callGemini(args: {
     lastNetworkError instanceof Error
       ? lastNetworkError.message
       : "Gemini network error",
+    503,
   );
 }
 
@@ -278,10 +301,10 @@ export function createGeminiProvider(): RecipeProvider {
       const { wantsCreator, needsDeepThinking } = analyzePrompt(input.userPrompt);
       // Prefer search when a creator is named; fall back without tools if needed.
       const searchAttempts = wantsCreator ? [true, false] : [false, true];
-      // Adaptive thinking: deep for creator/adapt; off for simple scratch.
-      // If deep returns empty (budget burn), retry that attempt with 0.
+      // Try light thinking first so overloaded deep-thinking calls don't block
+      // a successful generate for minutes; deep is a follow-up when needed.
       const thinkingAttempts = needsDeepThinking
-        ? [THINKING_BUDGET_DEEP, 0]
+        ? [0, THINKING_BUDGET_DEEP]
         : [0];
 
       let lastError = "Gemini returned an empty response";
@@ -291,6 +314,9 @@ export function createGeminiProvider(): RecipeProvider {
       // fails outright, so an unresolved persona never turns into a 500.
       let personaUnknownResult: unknown;
       let outcome: "ok" | "persona_fallback" | "error" = "error";
+      let failedCombos = 0;
+      // Cap combos so a total Gemini outage cannot run for several minutes.
+      const maxFailedCombos = 2;
 
       const logSummary = () => {
         const calls =
@@ -309,13 +335,43 @@ export function createGeminiProvider(): RecipeProvider {
       try {
         combos: for (const useSearch of searchAttempts) {
           for (const thinkingBudget of thinkingAttempts) {
-            const response = await callGemini({
-              apiKey,
-              model,
-              input,
-              useSearch,
-              thinkingBudget,
-            });
+            let response: Response;
+            try {
+              response = await callGemini({
+                apiKey,
+                model,
+                input,
+                useSearch,
+                thinkingBudget,
+              });
+            } catch (error) {
+              // Timeout / transient upstream must not abort the whole generate —
+              // try the next lighter search/thinking combo instead.
+              if (
+                error instanceof UpstreamError &&
+                (error.status === undefined ||
+                  isTransientGeminiStatus(error.status) ||
+                  isAbortTimeout(error))
+              ) {
+                lastError = error.message;
+                lastHttpStatus = error.status ?? 503;
+                failedCombos += 1;
+                aiLog.warn("gemini", {
+                  phase: "combo_failover",
+                  model,
+                  search: useSearch,
+                  thinkingBudget,
+                  httpStatus: lastHttpStatus,
+                  failedCombos,
+                  error: truncateUpstreamBody(error.message, 200),
+                });
+                if (failedCombos >= maxFailedCombos) {
+                  break combos;
+                }
+                continue;
+              }
+              throw error;
+            }
 
             if (!response.ok) {
               const body = await response.text().catch(() => "");
@@ -336,6 +392,12 @@ export function createGeminiProvider(): RecipeProvider {
                 response.status === 400 ||
                 isTransientGeminiStatus(response.status)
               ) {
+                if (isTransientGeminiStatus(response.status)) {
+                  failedCombos += 1;
+                  if (failedCombos >= maxFailedCombos) {
+                    break combos;
+                  }
+                }
                 continue;
               }
               throw new UpstreamError(lastError, response.status);
