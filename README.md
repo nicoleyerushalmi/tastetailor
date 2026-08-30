@@ -30,6 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `AI_PROVIDER` | Yes | `mock` or `gemini` |
 | `GEMINI_API_KEY` | Only if `AI_PROVIDER=gemini` | Server-only, never sent to the browser |
 | `GEMINI_MODEL` | No | Defaults to `gemini-flash-latest`. Pinned versions like `gemini-2.5-flash` may 404 for newer API keys ("no longer available to new users") — the `-latest` alias tracks whatever Google currently recommends. |
+| `GEMINI_FALLBACK_MODEL` | No | If set, tried once (full retry matrix) when `GEMINI_MODEL` is fully overloaded or unresponsive (503/429/timeout) — not used for definitive errors like a bad request. Unset by default. |
 | `GENERATIONS_PER_DAY` | No | Per-user daily generation cap, defaults to 20 |
 | `AI_DEBUG` | No | Set to `1` for per-attempt Gemini/API logs in the server console (summaries always log) |
 | `UNSPLASH_ACCESS_KEY` | No | Recipe photos on generate; omit to use ambient fallbacks |

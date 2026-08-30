@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 const MESSAGES = [
-  "Fitting this recipe to how you eat…",
+  "Fitting this recipe to you",
   "Balancing ingredients and swaps…",
   "Checking your diet and goals…",
   "Writing clear steps…",
   "Almost ready — plating the details…",
 ];
+
+const SLOW_MESSAGES = [
+  "Still working — this can take a bit longer than usual…",
+  "The kitchen's busier than usual, hang tight…",
+];
+
+// After this long, swap to slower-going copy — a generic reassurance, not
+// tied to any real signal from the server about what's actually happening.
+const SLOW_THRESHOLD_MS = 12_000;
 
 type GeneratingOverlayProps = {
   open: boolean;
@@ -17,21 +26,30 @@ type GeneratingOverlayProps = {
 
 export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
   const [index, setIndex] = useState(0);
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setIndex(0);
+      setSlow(false);
       return;
     }
     document.body.style.overflow = "hidden";
-    const timer = window.setInterval(() => {
+    const messageTimer = window.setInterval(() => {
       setIndex((current) => (current + 1) % MESSAGES.length);
     }, 3200);
+    const slowTimer = window.setTimeout(() => {
+      setSlow(true);
+      setIndex(0);
+    }, SLOW_THRESHOLD_MS);
     return () => {
-      window.clearInterval(timer);
+      window.clearInterval(messageTimer);
+      window.clearTimeout(slowTimer);
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  const messages = slow ? SLOW_MESSAGES : MESSAGES;
 
   return (
     <AnimatePresence>
@@ -60,10 +78,12 @@ export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
               key={index}
               className="mt-3 min-h-[3rem] text-sm text-[var(--color-ink-muted)]"
             >
-              {MESSAGES[index]}
+              {messages[index]}
             </p>
             <p className="mt-6 text-xs text-[var(--color-ink-muted)]">
-              This can take up to half a minute when the kitchen is busy.
+              {slow
+                ? "This is taking a little longer than usual — thanks for your patience."
+                : "This can take up to few minutes when the kitchen is busy."}
             </p>
           </motion.div>
         </motion.div>
