@@ -18,7 +18,7 @@ const SLOW_MESSAGES = [
 
 // After this long, swap to slower-going copy — a generic reassurance, not
 // tied to any real signal from the server about what's actually happening.
-const SLOW_THRESHOLD_MS = 12_000;
+const SLOW_THRESHOLD_MS = 60_000;
 
 type GeneratingOverlayProps = {
   open: boolean;
