@@ -83,7 +83,7 @@ export function GeneratingOverlay({ open }: GeneratingOverlayProps) {
             <p className="mt-6 text-xs text-[var(--color-ink-muted)]">
               {slow
                 ? "This is taking a little longer than usual — thanks for your patience."
-                : "This can take up to few minutes when the kitchen is busy."}
+                : "This can take up to a few minutes when the kitchen is busy."}
             </p>
           </motion.div>
         </motion.div>
