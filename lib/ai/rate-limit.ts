@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_GENERATIONS_PER_DAY } from "@/lib/constants";
+import { markSlotRefunded } from "@/lib/ai/log";
 
 export async function refundGenerationSlot() {
   try {
     const supabase = await createClient();
     await supabase.rpc("refund_generation_slot");
+    markSlotRefunded();
   } catch (error) {
     console.error("[refundGenerationSlot] failed:", error);
   }

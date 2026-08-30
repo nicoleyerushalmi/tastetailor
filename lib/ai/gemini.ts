@@ -1,5 +1,11 @@
 import { buildPersonaIntensifyPrompt } from "@/lib/ai/prompt";
 import {
+  aiLog,
+  bumpGeminiHttpCall,
+  getAiRequestContext,
+  truncateUpstreamBody,
+} from "@/lib/ai/log";
+import {
   UpstreamError,
   type ProviderInput,
   type RecipeProvider,
@@ -175,12 +181,24 @@ async function callGemini(args: {
   let lastNetworkError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const started = Date.now();
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(requestTimeoutMs),
+      });
+      bumpGeminiHttpCall();
+      aiLog.debug("gemini", {
+        phase: "attempt",
+        model,
+        search: useSearch,
+        thinkingBudget,
+        httpStatus: response.status,
+        attempt: attempt + 1,
+        ms: Date.now() - started,
+        repair: Boolean(input.repairOf),
       });
 
       if (
@@ -193,7 +211,20 @@ async function callGemini(args: {
 
       await sleep(600 * 2 ** attempt);
     } catch (error) {
+      bumpGeminiHttpCall();
       lastNetworkError = error;
+      aiLog.debug("gemini", {
+        phase: "attempt_network_error",
+        model,
+        search: useSearch,
+        thinkingBudget,
+        attempt: attempt + 1,
+        ms: Date.now() - started,
+        error:
+          error instanceof Error
+            ? truncateUpstreamBody(error.message, 200)
+            : "network_error",
+      });
       if (attempt === maxAttempts - 1) {
         throw new UpstreamError(
           error instanceof Error ? error.message : "Gemini network error",
@@ -242,6 +273,8 @@ export function createGeminiProvider(): RecipeProvider {
 
   return {
     async generate(input: ProviderInput): Promise<unknown> {
+      const started = Date.now();
+      const callsAtStart = getAiRequestContext()?.geminiCalls ?? 0;
       const { wantsCreator, needsDeepThinking } = analyzePrompt(input.userPrompt);
       // Prefer search when a creator is named; fall back without tools if needed.
       const searchAttempts = wantsCreator ? [true, false] : [false, true];
@@ -257,111 +290,144 @@ export function createGeminiProvider(): RecipeProvider {
       // persona — kept as a fallback in case the intensified retry below
       // fails outright, so an unresolved persona never turns into a 500.
       let personaUnknownResult: unknown;
+      let outcome: "ok" | "persona_fallback" | "error" = "error";
 
-      combos: for (const useSearch of searchAttempts) {
-        for (const thinkingBudget of thinkingAttempts) {
-          const response = await callGemini({
-            apiKey,
-            model,
-            input,
-            useSearch,
-            thinkingBudget,
-          });
+      const logSummary = () => {
+        const calls =
+          (getAiRequestContext()?.geminiCalls ?? callsAtStart) - callsAtStart;
+        aiLog.info("gemini", {
+          phase: "summary",
+          model,
+          outcome,
+          calls,
+          totalMs: Date.now() - started,
+          wantsCreator,
+          repair: Boolean(input.repairOf),
+        });
+      };
 
-          if (!response.ok) {
-            const body = await response.text().catch(() => "");
-            lastError = `Gemini HTTP ${response.status}: ${body.slice(0, 300)}`;
-            lastHttpStatus = response.status;
-            // Tool + JSON combos often 400; transient load may still fail after
-            // callGemini retries — try the next search/thinking combo.
-            if (
-              response.status === 400 ||
-              isTransientGeminiStatus(response.status)
-            ) {
-              continue;
-            }
-            throw new UpstreamError(lastError, response.status);
-          }
-
-          const { text, candidate, finishReason } = await parseGeminiResponse(
-            response,
-          );
-
-          if (!text) {
-            lastError = `Gemini returned an empty response${
-              finishReason ? ` (${finishReason})` : ""
-            }`;
-            continue;
-          }
-
-          try {
-            const parsed = extractJson(text);
-            const fromSearch = groundingSources(
-              candidate?.groundingMetadata?.groundingChunks,
-            );
-            const merged = mergeSources(parsed, fromSearch);
-
-            if (wantsCreator && looksPersonaUnknown(parsed)) {
-              // Valid recipe, but the model gave up on the persona. The first
-              // combo already used the strongest settings (search + deep
-              // thinking when a creator is named), so weaker combos are
-              // unlikely to do better — go straight to the one dedicated,
-              // maximally-directed retry below instead of exhausting the rest.
-              personaUnknownResult = merged;
-              break combos;
-            }
-
-            return merged;
-          } catch (error) {
-            lastError =
-              error instanceof Error
-                ? error.message
-                : "Failed to parse Gemini JSON";
-            continue;
-          }
-        }
-      }
-
-      if (personaUnknownResult !== undefined) {
-        // Every combo above resolved to "persona unknown". One last,
-        // maximally-directed attempt before accepting the fallback — skipped
-        // when this call is itself already a schema-repair retry, so we
-        // never stack two different retry mechanisms in one pass.
-        if (!input.repairOf) {
-          try {
-            const intensifiedInput: ProviderInput = {
-              ...input,
-              repairOf: buildPersonaIntensifyPrompt(
-                extractPersonaQuery(input.userPrompt),
-              ),
-            };
+      try {
+        combos: for (const useSearch of searchAttempts) {
+          for (const thinkingBudget of thinkingAttempts) {
             const response = await callGemini({
               apiKey,
               model,
-              input: intensifiedInput,
-              useSearch: true,
-              thinkingBudget: THINKING_BUDGET_DEEP,
+              input,
+              useSearch,
+              thinkingBudget,
             });
 
-            if (response.ok) {
-              const { text, candidate } = await parseGeminiResponse(response);
-              if (text) {
-                const parsed = extractJson(text);
-                const fromSearch = groundingSources(
-                  candidate?.groundingMetadata?.groundingChunks,
-                );
-                return mergeSources(parsed, fromSearch);
+            if (!response.ok) {
+              const body = await response.text().catch(() => "");
+              const clipped = truncateUpstreamBody(body);
+              lastError = `Gemini HTTP ${response.status}: ${clipped}`;
+              lastHttpStatus = response.status;
+              aiLog.warn("gemini", {
+                phase: "http_error",
+                model,
+                httpStatus: response.status,
+                search: useSearch,
+                thinkingBudget,
+                body: clipped,
+              });
+              // Tool + JSON combos often 400; transient load may still fail after
+              // callGemini retries — try the next search/thinking combo.
+              if (
+                response.status === 400 ||
+                isTransientGeminiStatus(response.status)
+              ) {
+                continue;
               }
+              throw new UpstreamError(lastError, response.status);
             }
-          } catch {
-            // Fall through to the already-valid fallback below.
+
+            const { text, candidate, finishReason } = await parseGeminiResponse(
+              response,
+            );
+
+            if (!text) {
+              lastError = `Gemini returned an empty response${
+                finishReason ? ` (${finishReason})` : ""
+              }`;
+              continue;
+            }
+
+            try {
+              const parsed = extractJson(text);
+              const fromSearch = groundingSources(
+                candidate?.groundingMetadata?.groundingChunks,
+              );
+              const merged = mergeSources(parsed, fromSearch);
+
+              if (wantsCreator && looksPersonaUnknown(parsed)) {
+                // Valid recipe, but the model gave up on the persona. The first
+                // combo already used the strongest settings (search + deep
+                // thinking when a creator is named), so weaker combos are
+                // unlikely to do better — go straight to the one dedicated,
+                // maximally-directed retry below instead of exhausting the rest.
+                personaUnknownResult = merged;
+                break combos;
+              }
+
+              outcome = "ok";
+              return merged;
+            } catch (error) {
+              lastError =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to parse Gemini JSON";
+              continue;
+            }
           }
         }
 
-        return personaUnknownResult;
-      }
+        if (personaUnknownResult !== undefined) {
+          // Every combo above resolved to "persona unknown". One last,
+          // maximally-directed attempt before accepting the fallback — skipped
+          // when this call is itself already a schema-repair retry, so we
+          // never stack two different retry mechanisms in one pass.
+          if (!input.repairOf) {
+            try {
+              const intensifiedInput: ProviderInput = {
+                ...input,
+                repairOf: buildPersonaIntensifyPrompt(
+                  extractPersonaQuery(input.userPrompt),
+                ),
+              };
+              const response = await callGemini({
+                apiKey,
+                model,
+                input: intensifiedInput,
+                useSearch: true,
+                thinkingBudget: THINKING_BUDGET_DEEP,
+              });
 
-      throw new UpstreamError(lastError, lastHttpStatus);
+              if (response.ok) {
+                const { text, candidate } = await parseGeminiResponse(response);
+                if (text) {
+                  const parsed = extractJson(text);
+                  const fromSearch = groundingSources(
+                    candidate?.groundingMetadata?.groundingChunks,
+                  );
+                  outcome = looksPersonaUnknown(parsed)
+                    ? "persona_fallback"
+                    : "ok";
+                  return mergeSources(parsed, fromSearch);
+                }
+              }
+            } catch {
+              // Fall through to the already-valid fallback below.
+            }
+          }
+
+          outcome = "persona_fallback";
+          return personaUnknownResult;
+        }
+
+        throw new UpstreamError(lastError, lastHttpStatus);
+      } finally {
+        logSummary();
+      }
     },
   };
 }

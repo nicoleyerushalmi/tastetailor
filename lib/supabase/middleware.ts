@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { aiLog } from "@/lib/ai/log";
 
 const PROTECTED_PREFIXES = [
   "/generate",
@@ -44,7 +45,25 @@ export async function updateSession(request: NextRequest) {
   // Validates the JWT with Supabase Auth (do not use getSession() here).
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError) {
+    const code =
+      typeof authError === "object" &&
+      authError &&
+      "code" in authError &&
+      typeof (authError as { code?: unknown }).code === "string"
+        ? (authError as { code: string }).code
+        : undefined;
+    // Stale cookies after sign-out / revoked refresh — noisy if logged as Error.
+    if (code === "refresh_token_not_found") {
+      aiLog.debug("auth", {
+        phase: "refresh_token_not_found",
+        hint: "clear_site_cookies_or_relogin",
+      });
+    }
+  }
 
   if (!user && isProtectedPath(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();

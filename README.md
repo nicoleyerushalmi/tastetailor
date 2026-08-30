@@ -13,6 +13,8 @@ copy .env.local.example .env.local
 
 Fill in the Supabase keys (Project Settings → API). Leave `AI_PROVIDER=mock` until you have a Gemini API key — the mock provider returns a structured recipe without calling any AI service.
 
+Server logs: generate/refine always print a one-line summary (`status`, `geminiCalls`, `slotClaimed` / `slotRefunded`, `unsplash`). Set `AI_DEBUG=1` for per-attempt Gemini detail.
+
 ```bash
 npm run dev
 ```
@@ -29,6 +31,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GEMINI_API_KEY` | Only if `AI_PROVIDER=gemini` | Server-only, never sent to the browser |
 | `GEMINI_MODEL` | No | Defaults to `gemini-flash-latest`. Pinned versions like `gemini-2.5-flash` may 404 for newer API keys ("no longer available to new users") — the `-latest` alias tracks whatever Google currently recommends. |
 | `GENERATIONS_PER_DAY` | No | Per-user daily generation cap, defaults to 20 |
+| `AI_DEBUG` | No | Set to `1` for per-attempt Gemini/API logs in the server console (summaries always log) |
+| `UNSPLASH_ACCESS_KEY` | No | Recipe photos on generate; omit to use ambient fallbacks |
 
 ## Scripts
 

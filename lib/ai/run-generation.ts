@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildRepairPrompt } from "@/lib/ai/prompt";
 import { UpstreamError, type RecipeProvider } from "@/lib/ai/provider";
+import { aiLog, truncateUpstreamBody } from "@/lib/ai/log";
 import { refundGenerationSlot } from "@/lib/ai/rate-limit";
 import {
   AiRecipeOutputSchema,
@@ -33,14 +34,25 @@ export async function runRecipeGeneration(params: {
     raw = await provider.generate({ systemPrompt, userPrompt });
   } catch (error) {
     await refundGenerationSlot();
-    console.error("[runRecipeGeneration] provider error:", error);
     if (error instanceof UpstreamError) {
+      aiLog.error("runRecipeGeneration", {
+        phase: "provider_error",
+        status: error.status,
+        message: truncateUpstreamBody(error.message),
+      });
       return {
         kind: "upstream_error",
         status: error.status,
         message: error.message,
       };
     }
+    aiLog.error("runRecipeGeneration", {
+      phase: "provider_error",
+      message:
+        error instanceof Error
+          ? truncateUpstreamBody(error.message)
+          : "unknown",
+    });
     return { kind: "upstream_error" };
   }
 
@@ -61,6 +73,11 @@ export async function runRecipeGeneration(params: {
     } catch (error) {
       await refundGenerationSlot();
       if (error instanceof UpstreamError) {
+        aiLog.error("runRecipeGeneration", {
+          phase: "repair_provider_error",
+          status: error.status,
+          message: truncateUpstreamBody(error.message),
+        });
         return {
           kind: "upstream_error",
           status: error.status,

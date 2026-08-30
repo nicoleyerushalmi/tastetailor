@@ -1,3 +1,5 @@
+import { aiLog, truncateUpstreamBody } from "@/lib/ai/log";
+
 export type RecipeImage = {
   url: string;
   alt: string;
@@ -36,11 +38,12 @@ export async function fetchRecipeImage(
     });
 
     if (!response.ok) {
-      console.warn(
-        "[unsplash] search failed:",
-        response.status,
-        await response.text().catch(() => ""),
-      );
+      const body = await response.text().catch(() => "");
+      aiLog.warn("unsplash", {
+        phase: "search_failed",
+        httpStatus: response.status,
+        body: truncateUpstreamBody(body, 200),
+      });
       return null;
     }
 
@@ -77,7 +80,13 @@ export async function fetchRecipeImage(
       creditUrl,
     };
   } catch (error) {
-    console.warn("[unsplash] search error:", error);
+    aiLog.warn("unsplash", {
+      phase: "search_error",
+      error:
+        error instanceof Error
+          ? truncateUpstreamBody(error.message, 200)
+          : "unknown",
+    });
     return null;
   }
 }
