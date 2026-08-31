@@ -19,14 +19,14 @@ Draft TESTING.md → You approve → Implement tests → SCALE / SECURITY / PRES
 
 ## Deliverables
 
-| Deliverable | Path | Notes |
+| Deliverable | Path | Status |
 | --- | --- | --- |
-| Testing specification | `docs/TESTING.md` | Approve first |
-| Automated tests | Vitest + Playwright | After approval |
-| Scale document | `docs/SCALE.md` | Limits, bottlenecks |
-| Security document | `docs/SECURITY.md` | Auth, RLS, secrets |
-| Presentation outline | `docs/PRESENTATION.md` | 10–15 min |
-| Plan status update | `docs/IMPLEMENTATION_PLAN.md` | Mark Phase 9 done |
+| Testing specification | `docs/TESTING.md` | Done — approved |
+| Automated tests | Vitest + Playwright | Done — 18 Vitest files + 8 Playwright specs, passing |
+| Scale document | `docs/SCALE.md` | Done |
+| Security document | `docs/SECURITY.md` | Done |
+| Presentation outline | `docs/PRESENTATION.md` | Done |
+| Plan status update | `docs/IMPLEMENTATION_PLAN.md` | Done — Phase 9 marked complete |
 
 ---
 
@@ -71,6 +71,6 @@ A **specification**, not source code. Each section lists purpose, scope, method 
 - Full k6/cloud load suite.
 - Committing secrets; requiring live Gemini for default unit tests.
 
-## Immediate next step
+## Status
 
-After you confirm this plan: draft the full **`docs/TESTING.md`** for your review — still **no test implementation** until you approve that document.
+All deliverables above are complete. Phase 9 is done.

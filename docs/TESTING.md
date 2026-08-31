@@ -340,14 +340,17 @@ we have already had to fix once.
 
 Regression cover for the 503 failure seen during Phase 8. `callGemini` and
 `isTransientGeminiStatus` are module-private, so these run through
-`createGeminiProvider()` with a stubbed global `fetch` and `GEMINI_API_KEY` set. Backoff
-sleeps 600 ms then 1200 ms, so use fake timers rather than waiting.
+`createGeminiProvider()` with a stubbed global `fetch` and `GEMINI_API_KEY` set. Each
+combo allows 2 attempts with a single backoff sleep (400 ms) between them; a combo that
+still fails moves to the next search/thinking combo, capped at 2 failed combos before
+giving up — so use fake timers rather than waiting.
 
 | ID | Case | Pass criteria |
 | --- | --- | --- |
-| UNIT-10 | Retries transient statuses | 503 → 503 → 200 results in three `fetch` calls and a resolved response |
-| UNIT-11 | No retry on hard failure | A 400 response returns after a single `fetch` call |
-| UNIT-12 | Retry exhaustion | Three consecutive 503s raise `UpstreamError` with status 503, which `outcomeToErrorResponse` maps to `ai_unavailable` |
+| UNIT-10 | Retries transient statuses | 503 → 200 resolves within the same combo's 2 attempts, ≥2 `fetch` calls total |
+| UNIT-11 | No retry on hard failure | A 400 response returns after a single `fetch` call within that combo |
+| UNIT-12 | Retry exhaustion | Consecutive 503s across all attempted combos raise `UpstreamError` with status 503, which `outcomeToErrorResponse` maps to `ai_unavailable` |
+| — | Model fallback | If `GEMINI_FALLBACK_MODEL` is set and the primary model is fully overloaded (busy: transient status or timeout), one retry runs against the fallback model — not attempted for a definitive error like a 400 |
 
 ### Unsplash lookup — `lib/images/unsplash.ts`
 

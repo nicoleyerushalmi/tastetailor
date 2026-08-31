@@ -17,9 +17,9 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 | 6 — History and favorites | Completed | Paginated `RecipeCard` grids, `?page=` search param, favorites filter |
 | 7 — Shopping list and export | Completed | Checkbox toggle, delete row, clear-all, clipboard export |
 | 8 — Polish and deploy | In progress | Loading/error/not-found boundaries + README done; Vercel deploy needs dashboard access |
-| 9 — Tests, scale/security docs, presentation | Pending | Vitest configured; no test files yet |
+| 9 — Tests, scale/security docs, presentation | Completed | Full Vitest + Playwright suite implemented and passing (`docs/TESTING.md`); `docs/SCALE.md`, `docs/SECURITY.md`, `docs/PRESENTATION.md` written |
 
-**Phases 0–7 done; 8 in progress (deploy pending); 9 remains.**
+**Phases 0–7 and 9 done; 8 in progress (deploy pending dashboard access).**
 
 ---
 
@@ -35,9 +35,9 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 6. History and favorites: paginated lists, favorites filter  
 7. Shopping list: check off, remove, clear all, export to clipboard  
 
-**Still stubs / unfinished**
+**Still open**
 
-- Vercel production deploy, README course polish, automated tests, scale/security writeups  
+- Vercel production deploy (dashboard access, not code)
 
 **Stack in use**
 
@@ -52,9 +52,9 @@ Locked for this plan: Tailwind CSS, Supabase dashboard SQL editor for migrations
 
 ## Open dilemmas (status)
 
-1. **PRD vs locked design** (cup↔gram merge; curated persona menu). Still needs a joint PRD edit before submission. **Open.**
+1. **PRD vs locked design** (cup↔gram merge; curated persona menu). **Resolved:** `PRD.md` updated to match shipped scope.
 2. **Rate-limit refund on upstream failure.** **Decided / implemented:** refund on network/5xx and invalid AI output after repair; never refund on non-culinary refusal.
-3. **Supabase email confirmation.** Still recommend disabling for demos; document in security writeup. **Open (ops).**
+3. **Supabase email confirmation.** Recommend disabling for demos; documented in `docs/SECURITY.md` §1/§8. **Open (ops)** — the dashboard setting itself is a deploy-time choice, not code.
 4. **Fractional countable quantities.** **Decided / implemented:** no ceil — all units use 2-decimal scaling (e.g. 4.5 eggs).
 5. **Scratch-mode insights.** **Decided / implemented:** substitutions may be empty; summary + sources explain choices / creator use.
 6. **Recipe delete.** **Decided / implemented** on recipe detail.
@@ -102,8 +102,8 @@ Verification checklist after running:
 ```text
 lib/supabase/client.ts     createBrowserClient()  -> for client components
 lib/supabase/server.ts     createServerClient()   -> RSC + route handlers, cookie-aware
-lib/supabase/middleware.ts updateSession(request) -> refresh cookies at the edge
-middleware.ts              matcher for all non-static routes
+lib/supabase/middleware.ts updateSession(request) -> refresh cookies + redirect protected paths
+proxy.ts                   matcher for all non-static routes (Next.js 16 renamed middleware.ts -> proxy.ts)
 ```
 
 Auth pages and forms:
@@ -257,9 +257,9 @@ Already have:
 
 ---
 
-## Phase 9 — Remaining course deliverables
+## Phase 9 — Course deliverables
 
-Written after the app works, in this order: test specification document, implemented tests (Vitest for `merge`, `scale`, validation schemas, and the generate route with the mock provider, plus one Playwright end-to-end run of signup through export), scale document, security document, and the 10–15 minute presentation.
+Completed, in this order: test specification (`docs/TESTING.md`), the implemented automated suite (18 Vitest files + 8 Playwright specs — unit logic, both API routes with the mock provider, full auth/onboarding gates, cross-user privilege isolation, DB constraints, XSS/untrusted-content handling, and stress/rate-limit behavior), the scale document (`docs/SCALE.md`), the security document (`docs/SECURITY.md`), and the 10–15 minute presentation outline (`docs/PRESENTATION.md`).
 
 ---
 
@@ -271,4 +271,4 @@ Default: ship on `main` for this small team. Optional short-lived branches (`cur
 
 ## Next step
 
-**Finish Phase 8:** Vercel deploy (push to GitHub → import into Vercel → set env vars → add the deployed URL to Supabase Auth redirect allow-list → smoke test live). This needs dashboard access, not code — see the README's "Deploy" section for the exact steps.
+**Finish Phase 8 — the only open item:** Vercel deploy (push to GitHub → import into Vercel → set env vars → add the deployed URL to Supabase Auth redirect allow-list → smoke test live). This needs dashboard access, not code — see the README's "Deploy" section for the exact steps.
