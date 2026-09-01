@@ -4,7 +4,7 @@
 
 TasteTailor is an advanced, AI-powered web platform for personalized recipe management. The application allows users to either input an existing recipe or request a dish from scratch, instantly generating a version that matches their personal dietary preferences, lifestyle goals, or a specific culinary style.
 
-Furthermore, the app dynamically scales ingredients based on the number of diners and generates smart, exportable shopping lists that merge identical ingredients across recipes (same name and unit) so nothing gets copied twice. To ensure users never lose a great meal, the app maintains a private, ChatGPT-style **Personal Recipe History** of all their tailored recipes, allowing them to bookmark specific generations into a dedicated **Favorites** library.
+Furthermore, the app dynamically scales ingredients based on the number of diners and generates smart, exportable shopping lists that merge identical ingredients across recipes (same name and unit) so nothing gets copied twice. To ensure users never lose a great meal, the app maintains a private, Gemini-style **Personal Recipe History** of all their tailored recipes, allowing them to bookmark specific generations into a dedicated **Favorites** library.
 
 ---
 
@@ -90,7 +90,7 @@ To achieve these goals, the MVP requires the following technical capabilities:
 ### Flow 3: Dynamic Scaling
 
 - On any recipe page, the default serving size is displayed (e.g., 4 servings).
-- The user clicks (+/-) buttons to adjust the servings to 6.
+- The user clicks (+/-) buttons to adjust the servings.
 - All ingredient quantities update proportionally and instantly on the client side.
 
 ### Flow 4: Personal Favorites Library

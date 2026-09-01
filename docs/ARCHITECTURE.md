@@ -1,7 +1,6 @@
 # TasteTailor — Software Architecture
 
-Status: reflects the implemented app (updated to match shipped code; superseded the original OpenAI-based MVP plan when the AI provider was switched to Gemini during build)
-Stack constraint: Next.js + TypeScript + Supabase + Vercel
+Status: reflects the implemented app, Stack constraint: Next.js + TypeScript + Supabase + Vercel
 Related: Product Specification Document (PRD)
 
 ---
@@ -19,15 +18,6 @@ Support these end-to-end flows:
 7. Cook mode (a distraction-free, printable view of a recipe)
 8. Best-effort recipe photo attachment (Unsplash)
 
-Non-goals for MVP (explicit):
-
-- URL scraping / import from websites
-- Payments, freemium billing, affiliate supermarket APIs
-- Social sharing / public recipes
-- Precise nutrition / macro calculation
-- Automatic cup↔gram density conversion (see §6.3) — confirmed still true in code: shopping-list merging only matches on identical normalized `(name, unit)`, with no unit-conversion logic anywhere in the codebase
-- B2B dietitian multi-client accounts
-- A curated, browsable "categories of creators" directory — persona/style input is a single free-text field with a flat autocomplete list and a handful of generic quick-fill phrases, not a categorized browsing UI
 
 ---
 
